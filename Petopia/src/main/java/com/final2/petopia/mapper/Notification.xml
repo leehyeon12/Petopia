@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="notification">
+
+<!-- 회원의 고유번호를 이용한 안읽은 알림 갯수 나타내기 -->
+<select id="selectUnreadNotificationCount" parameterType="int" resultType="int">
+	select count(*)
+	from notification
+	where fk_idx = #{idx}
+	and not_readcheck = 0
+	and to_char(not_time, 'yyyy-mm-dd hh24:mi:ss') <![CDATA[<=]]> to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss')
+</select>
+
+<!-- 회원의 고유번호를 이용한 심플 알림정보 가져오기(알림타입과 그 갯수) -->
+<resultMap type="HashMap" id="selectNotificatioSimplenListMap">
+	<result property="NOT_TYPE" column="not_type" javaType="String" />
+	<result property="COUNT" column="count" javaType="String" />
+</resultMap>
+
+<select id="selectNotificatioSimplenList" parameterType="int" resultMap="selectNotificatioSimplenListMap">
+	select not_type, count(not_type) as count
+	from notification
+	where fk_idx = #{idx}
+	and not_readcheck = 0
+	and to_char(not_time, 'yyyy-mm-dd hh24:mi:ss') <![CDATA[<=]]> to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss')
+	group by not_type
+</select>
+
+<!-- 알림 리스트 가져오기 -->
+<select id="selectNotificatioList" parameterType="HashMap" resultType="com.final2.petopia.model.NotificationVO">	
+select  RNO, NOT_UID, FK_IDX, NOT_TYPE, NOT_MESSAGE, NOT_DATE, 
+		NOT_READCHECK, NOT_REMINDSTATUS, NOT_TIME, NOT_URL
+	from
+	(
+	select  ROWNUM as RNO, NOT_UID, FK_IDX, NOT_TYPE, NOT_MESSAGE, NOT_DATE, 
+			NOT_READCHECK, NOT_REMINDSTATUS, NOT_TIME, NOT_URL
+		from
+		(
+			select 	NOT_UID, FK_IDX, NOT_TYPE, NOT_MESSAGE, NOT_DATE, 
+					NOT_READCHECK, NOT_REMINDSTATUS, NOT_TIME, NOT_URL
+			from notification
+			where fk_idx = #{IDX}
+			and to_char(not_time, 'yyyy-mm-dd hh24:mi:ss') <![CDATA[<=]]> to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss')
+			order by NOT_UID desc
+		) V
+	) T
+where RNO between #{STARTRNO} AND #{ENDRNO}
+</select>
+
+<!-- 전체 알림 수 가져오기 -->
+<select id="selectTotalNotCount" parameterType="int" resultType="int">
+	select count(*)
+	from notification
+	where fk_idx = #{idx}
+	and to_char(not_time, 'yyyy-mm-dd hh24:mi:ss') <![CDATA[<=]]> to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss')
+</select>
+
+<!-- 알림번호 통해 알림 읽음 상태로 업데이트 -->
+<update id="updateReadcheck" parameterType="HashMap">
+	update notification set not_readcheck = 1
+	where not_uid = #{NOT_UID} and fk_idx = #{IDX}
+</update>
+
+
+<!-- 회원번호, 알림번호를 통해 재알림할 하나의 알림 select -->
+<select id="selectNotification" parameterType="HashMap" resultType="com.final2.petopia.model.NotificationVO">
+	select  NOT_UID, FK_IDX, NOT_TYPE, NOT_MESSAGE, NOT_DATE, 
+			NOT_READCHECK, NOT_REMINDSTATUS, NOT_TIME, NOT_URL
+	from notification
+	where NOT_UID = #{NOT_UID} and FK_IDX = #{IDX}
+</select>
+
+<!-- 재알림 insert -->
+<insert id="insertRemindNot" parameterType="com.final2.petopia.model.NotificationVO">
+	insert into notification(NOT_UID, FK_IDX, NOT_TYPE, NOT_MESSAGE, NOT_URL, NOT_DATE, NOT_TIME, NOT_READCHECK, NOT_REMINDSTATUS)
+	values(seq_notification_UID.nextval, #{fk_idx}, #{not_type}, #{not_message}, #{not_URL},  default, to_date(to_char((sysdate+(5/60*1/24)), 'yyyy-mm-dd hh24:mi:ss'), 'yyyy-mm-dd hh24:mi:ss'), default, 1) 
+</insert>
+
+<!-- 알림 삭제 -->
+<delete id="deleteNot" parameterType="HashMap">
+	delete from notification
+	where not_uid = #{NOT_UID} AND fk_idx = #{IDX}
+</delete>
+
+</mapper>

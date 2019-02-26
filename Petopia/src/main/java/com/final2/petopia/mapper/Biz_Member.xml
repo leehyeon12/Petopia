@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="biz_member">
+	
+	<!-- 태그 리스트 보여주기 -->
+	<resultMap type="HashMap" id="tagListMap">
+		<result property="TAG_UID"	column="tag_UID"	javaType="String"/>
+		<result property="TAG_TYPE"	column="tag_type"	javaType="String"/>
+		<result property="TAG_NAME"	column="tag_name"	javaType="String"/>
+	</resultMap>
+
+	<select id="selectRecommendTagList" resultMap="tagListMap">
+		select tag_UID, tag_type, tag_name
+		from recommend_tag
+		order by tag_UID
+	</select>
+	
+	<select id="selectBizMemberIdIsUsed" parameterType="String" resultType="int">
+		select count(*)
+		from member
+		userid = #{userid}
+	</select>
+	
+	<!-- 회원가입할 회원번호 받아오기 -->
+	<select id="selectBizMemberSeq" resultType="int">
+		select seq_member.nextval
+		from dual
+	</select>
+	
+	<!-- member 테이블 insert -->
+	<insert id="insertMemberByMvo" parameterType="com.final2.petopia.model.Biz_MemberVO">
+		insert into member(idx, userid, pwd, name, nickname, birthday, phone, profileimg, fileName, membertype)
+		values(#{idx_biz}, #{userid}, #{pwd}, #{name}, #{name}, to_char(sysdate, 'yyyy-mm-dd'), #{phone}, #{profileimg}, #{fileName}, 2)
+	</insert>
+	
+	<insert id="insertLogin_logByMvo" parameterType="com.final2.petopia.model.Biz_MemberVO">
+		insert into login_log(idx, fk_userid, fk_pwd, lastlogindate)
+		values(#{idx_biz}, #{userid}, #{pwd}, sysdate)
+	</insert>
+	
+	<!-- have_tag 테이블 insert -->
+	<insert id="insertHave_tagByTagList" parameterType="HashMap">
+		insert into have_tag(fk_tag_UID, fk_idx, fk_tag_name) values
+		(#{FK_TAG_UID}, #{FK_IDX}, #{FK_TAG_NAME})
+	</insert>
+	
+	<!-- biz_info 테이블 insert  -->
+	<insert id="insertBizInfo" parameterType="com.final2.petopia.model.Biz_MemberVO">
+		insert into biz_info(idx_biz, biztype, repname, biznumber, postcode, addr1, addr2, latitude, longitude, prontimg
+			,weekday, wdstart, wdend, lunchstart, lunchend, satstart, satend, dayoff, dog, cat, smallani, etc, easyway, intro)
+		values(#{idx_biz}, #{biztype}, #{repname}, #{biznumber}, #{postcode}, #{addr1}, #{addr2}, #{latitude}, #{longitude}, #{prontimg}
+			, #{weekday}, to_date(#{wdstart}, 'hh24:mi'), to_date(#{wdend}, 'hh24:mi'), to_date(#{lunchstart}, 'hh24:mi'), to_date(#{lunchend}, 'hh24:mi'), to_date(#{satstart}, 'hh24:mi'), to_date(#{satend}, 'hh24:mi'), #{dayoff}, #{dog}, #{cat}, #{smallani}, #{etc}, #{easyway}, #{intro})
+	</insert>
+	
+	<insert id="insertBizInfoImg" parameterType="HashMap">
+		insert into biz_info_img(img_uid, fk_idx_biz, imgfilename)
+		values(biz_info_img_seq.nextval, #{FK_IDX_BIZ}, #{IMGFILENAME})
+	</insert>
+	
+	<insert id="insertDoctor" parameterType="HashMap">
+		insert into doctors(doc_uid, fk_idx_biz, docname, dog, cat, smallani, etc)
+		values(seq_doctors_UID.nextval, #{IDX}, #{DOCTOR}, #{DOCDOG}, #{DOCCAT}, #{DOCSMALLANI}, #{DOCETC})
+	</insert>
+	
+	<select id="selectBizMemberVOByIdx_biz" parameterType="String" resultType="com.final2.petopia.model.Biz_MemberVO">
+		select name, phone, repname, biztype, postcode, addr1, addr2, latitude, longitude, weekday, to_char(wdstart, 'hh24:mm') as wdstart, to_char(wdend, 'hh24:mm') as wdend
+, to_char(lunchstart, 'hh24:mm') as lunchstart, to_char(lunchend, 'hh24:mm') as lunchend, to_char(satstart, 'hh24:mm') as satstart, to_char(satend, 'hh24:mm') as satend, dayoff, dog, cat, smallani, etc, easyway, intro, prontimg
+		from member M join biz_info B
+		ON idx = idx_biz
+		where idx_biz = #{idx_biz}
+	</select>
+	
+	<select id="selectBizTagList" resultType="String" parameterType="String">
+		select fk_tag_name
+		from have_tag
+		where fk_idx = #{idx_biz}
+	</select>
+	
+	<resultMap type="HashMap" id="DocMap">
+		<result property="docname" column="DOCNAME" javaType="String" />
+		<result property="dog" column="DOG" javaType="String" />
+		<result property="cat" column="CAT" javaType="String" />
+		<result property="smallani" column="SMALLANI" javaType="String" />
+		<result property="etc" column="ETC" javaType="String" />
+	</resultMap>
+	<select id="selectDocList" parameterType="String" resultMap="DocMap">
+		select docname, dog, cat, smallani, etc
+		from doctors
+		where fk_idx_biz = #{idx_biz}
+	</select>
+	
+	
+	<select id="selectBizImgList" parameterType="String" resultType="String">
+		select imgfilename
+		from biz_info_img
+		where fk_idx_biz = #{idx_biz} 
+	</select>
+	
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

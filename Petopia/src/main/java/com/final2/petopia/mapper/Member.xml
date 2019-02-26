@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="member">
+
+	<!-- 태그 리스트 보여주기 -->
+	<resultMap type="HashMap" id="tagListMap">
+		<result property="TAG_UID"	column="tag_UID"	javaType="String"/>
+		<result property="TAG_TYPE"	column="tag_type"	javaType="String"/>
+		<result property="TAG_NAME"	column="tag_name"	javaType="String"/>
+	</resultMap>
+
+	<select id="selectRecommendTagList" resultMap="tagListMap">
+		select tag_UID, tag_type, tag_name
+		from recommend_tag
+		order by tag_UID
+	</select>
+	
+	<!-- *** 회원가입 *** -->
+	<!-- 회원가입할 회원번호 받아오기 -->
+	<select id="selectMemberSeq" resultType="int">
+		select seq_member.nextval
+		from dual
+	</select>
+	
+	<!-- member 테이블 insert -->
+	<insert id="insertMemberByMvo" parameterType="com.final2.petopia.model.MemberVO">
+		insert into member(idx, userid, pwd, name, nickname, birthday, gender, phone, profileimg, fileName, membertype)
+		values(#{idx}, #{userid}, #{pwd}, #{name}, #{nickname}, #{birthday}, #{gender}, #{phone}, #{profileimg}, #{fileName}, 1)
+	</insert>
+	
+	<!-- login_log 테이블 insert -->
+	<insert id="insertLogin_logByMvo" parameterType="com.final2.petopia.model.MemberVO">
+		insert into login_log(idx, fk_userid, fk_pwd, lastlogindate)
+		values(#{idx}, #{userid}, #{pwd}, sysdate)
+	</insert>
+	
+	<!-- have_tag 테이블 insert -->
+	<insert id="insertHave_tagByTagList" parameterType="HashMap">
+		insert into have_tag(fk_tag_UID, fk_idx, fk_tag_name) values
+		(#{FK_TAG_UID}, #{FK_IDX}, #{FK_TAG_NAME})
+	</insert>
+	
+	<!-- *** 아이디 중복 체크 *** -->
+	<select id="selectMemberIdIsUsed" parameterType="String" resultType="int">
+		select count(*)
+		from member
+		where userid = #{userid}
+	</select>
+
+	<!-- *** 로그인 *** -->
+	<!-- 로그인 -->
+	<select id="loginSelectByUseridPwd" parameterType="HashMap" resultType="com.final2.petopia.model.MemberVO">
+		select a.idx, a.userid, a.pwd, a.name, a.nickname, a.membertype, a.phone, b.lastlogindate, b.member_status
+				, trunc(months_between(sysdate, lastlogindate)) AS lastlogindategap
+		from member a JOIN login_log b
+		ON a.idx = b.idx
+		where b.member_status = 1 and userid = #{USERID} and pwd = #{PWD}
+	</select>
+	
+	<!-- 마지막 로그인 날짜 기록하기 -->
+	<update id="updateLoginDateByUserid" parameterType="String">
+		update login_log set lastlogindate = sysdate
+		where member_status = 1 and fk_userid = #{USERID}
+	</update>
+	
+	<!-- *** SNS 로그인 *** -->
+	<!-- sns 로그인 아이디와 비번이 있는 경우 사용 가능한지 알아보기 -->
+	<select id="selectSNSMemberStatus" parameterType="String" resultType="int">
+		select b.member_status
+		from member a JOIN login_log b
+		ON a.idx = b.idx
+		where b.member_status = 1 and userid = #{USERID}
+	</select>
+	
+	<!-- sns 로그인해서 정보 가져오기 -->
+	<select id="loginSelectByUserid" parameterType="String" resultType="com.final2.petopia.model.MemberVO">
+		select a.idx, a.userid, a.pwd, a.name, a.nickname, a.membertype, b.lastlogindate, b.member_status
+				, trunc(months_between(sysdate, lastlogindate)) AS lastlogindategap
+		from member a JOIN login_log b
+		ON a.idx = b.idx
+		where b.member_status = 1 and userid = #{userid}
+	</select>
+	
+	<!-- *** 회원번호로 회원정보 조회 *** -->
+	<select id="selectMemberByIdx" parameterType="int" resultType="com.final2.petopia.model.MemberVO">
+		select a.idx, a.userid, a.pwd, a.name, a.nickname, a.birthday, a.gender, a.phone
+		    , a.profileimg, a.filename, a.membertype, a.point, a.totaldeposit
+		    , a.noshow, a.registerdate, b.lastlogindate, b.member_status
+		    , trunc(months_between(sysdate, lastlogindate)) AS lastlogindategap
+		from member a JOIN login_log b
+		ON a.idx = b.idx
+		where a.idx = #{idx}
+	</select>
+	
+	<!-- 저장된 사용자 태그 조회 -->
+	<resultMap type="HashMap" id="haveTagListMap">
+		<result property="FK_TAG_UID"	column="fk_tag_UID"		javaType="String"/>
+		<result property="FK_TAG_NAME"	column="fk_tag_name"	javaType="String"/>
+		<result property="FK_IDX"		column="fk_idx"			javaType="String"/>
+	</resultMap>
+	
+	<select id="selectHave_tagByIdx" parameterType="int" resultMap="haveTagListMap">
+		select fk_tag_UID, fk_tag_name, fk_idx
+		from have_tag
+		where fk_idx = #{idx}
+	</select>
+	
+	<!-- *** 회원수정 *** -->
+	<!-- member 테이블의 정보수정 -->
+	<update id="updateMemberByMvo" parameterType="com.final2.petopia.model.MemberVO">
+		update member set pwd = #{pwd}, name = #{name}, nickname = #{nickname}, gender = #{gender}, phone = #{phone}
+			, profileimg = #{profileimg}, fileName = #{fileName}
+		where idx = #{idx}
+	</update>
+	
+	<!-- login_log 테이블의 정보수정 -->
+	<update id="updateLogin_logByMvo" parameterType="com.final2.petopia.model.MemberVO">
+		update login_log set fk_pwd = #{pwd}
+		where idx = #{idx}
+	</update>
+	
+	<!-- 해당 사용자의 태그 모두 지우기 -->
+	<delete id="deleteHave_tagByIdx" parameterType="int">
+		delete from have_tag where fk_idx = #{idx}
+	</delete>
+	
+	<!-- 파일 수정이 없는 회원 정보 수정  -->
+	<update id="updateMemberByMvoNoProfile" parameterType="com.final2.petopia.model.MemberVO">
+		update member set pwd = #{pwd}, name = #{name}, nickname = #{nickname}, gender = #{gender}, phone = #{phone}
+		where idx = #{idx}
+	</update>
+	
+	<!-- *** 회원 탈퇴 *** -->
+	<update id="updateMemberStatusOutByIdx" parameterType="int">
+		update login_log set member_status = 0
+		where idx = #{idx}
+	</update>
+	
+	<!-- *** 관리자 *** --> 
+	<!-- *** 회원목록 *** -->
+	<!-- 해당하는 총회원 수 -->
+	<!-- 검색 X -->
+	<select id="selectTotalCount" resultType="int">
+		select count(*)
+		from member
+		where membertype = 1
+	</select>
+	
+	<!-- 검색 O -->
+	<select id="selectTotalCountBySearch" parameterType="HashMap" resultType="int">
+		select count(*)
+		from member
+		where ${SEARCHWHAT} like '%'|| #{SEARCH} ||'%'
+	</select>
+	
+	<!-- 해당 회원 리스트 조회 -->
+	<resultMap type="com.final2.petopia.model.MemberVO" id="selectMemberList_resultMap">
+		<result property="idx"				column="IDX"				javaType="int"/>
+		<result property="userid"			column="USERID"				javaType="String"/>
+		<result property="name"				column="NAME"				javaType="String"/>
+		<result property="nickname"			column="NICKNAME"			javaType="String"/>
+		<result property="phone"			column="PHONE"				javaType="String"/>
+		<result property="noshow"			column="NOSHOW"				javaType="int"/>
+		<result property="member_status"	column="MEMBER_STATUS"		javaType="int"/>
+		<result property="lastlogindategap"	column="LASTLOGINDATEGAP"	javaType="int"/>
+	</resultMap>
+	
+	<!-- 검색X 정렬X -->
+	<parameterMap type="HashMap" id="selectMemberList_paraMap">
+		<parameter property="STARTRNO"		mode="IN"	jdbcType="VARCHAR"	javaType="String"/>
+		<parameter property="ENDRNO"		mode="IN"	jdbcType="VARCHAR"	javaType="String"/>
+		<parameter property="MEMBERLIST"	mode="OUT"	jdbcType="CURSOR"	resultMap="selectMemberList_resultMap"/>
+	</parameterMap>
+	
+	<select id="selectMemberList" statementType="CALLABLE" parameterMap="selectMemberList_paraMap">
+		{ call pcd_selectMemberList(?,?,?) }
+	</select>
+	
+	<!-- === 2019.01.25 ==== 관리자 회원 리스트 수정 -->
+	<!-- === 2019.01.24 ==== 관리자 회원 리스트 코딩 -->
+	<!-- 프로시저 안 됨 ==> 일반 sql 쿼리로 -->
+	<!-- 검색 X 정렬 O -->
+	<select id="selectMemberListByOrderBy" parameterType="HashMap" resultType="com.final2.petopia.model.MemberVO">
+		select rno, idx, userid, name, nickname, phone, noshow, member_status
+		from
+		(
+		    select rownum as rno, idx, userid, name, nickname, phone, noshow, member_status
+		    from 
+		    (
+		        select a.idx, userid, name, nickname, noshow, phone, member_status
+		        from member a JOIN login_log b
+		        ON a.idx = b.idx
+		        where a.membertype = 1
+		        order by ${ORDERBY}, idx asc
+		    ) V
+		) T
+		where rno between #{STARTRNO} and #{ENDRNO}
+	</select>
+	
+	<!-- 검색 O 정렬 X -->
+	<select id="selectMemberListBySearch" parameterType="HashMap" resultType="com.final2.petopia.model.MemberVO">
+		select rno, idx, userid, name, nickname, noshow, phone, member_status
+		from
+		(
+		    select rownum as rno, idx, userid, name, nickname, phone, noshow, member_status
+		    from 
+		    (
+		        select a.idx, userid, name, nickname, noshow, phone, member_status
+		        from member a JOIN login_log b
+		        ON a.idx = b.idx
+		        where a.membertype = 1 and ${SEARCHWHAT} like '%'|| #{SEARCH} ||'%'
+		        order by idx asc
+		    ) V
+		) T
+		where rno between #{STARTRNO} and #{ENDRNO}
+	</select>
+	
+	<!-- 검색 O 정렬 O -->
+	<select id="selectMemberListBySearchOrderBy" parameterType="HashMap" resultType="com.final2.petopia.model.MemberVO">
+		select rno, idx, userid, name, nickname, noshow, phone, member_status
+		from
+		(
+		    select rownum as rno, idx, userid, name, nickname, phone, noshow, member_status
+		    from 
+		    (
+		        select a.idx, userid, name, nickname, noshow, phone, member_status
+		        from member a JOIN login_log b
+		        ON a.idx = b.idx
+		        where a.membertype = 1 and ${SEARCHWHAT} like '%'|| #{SEARCH} ||'%'
+		        order by ${ORDERBY}, idx asc
+		    ) V
+		) T
+		where rno between #{STARTRNO} and #{ENDRNO}
+	</select>
+	<!-- === 2019.01.24 ==== 관리자 회원 리스트 코딩 -->
+	<!-- === 2019.01.25 ==== 관리자 회원 리스트 수정 -->
+	
+	<!-- *** 회원 휴면 해제 *** -->
+	<update id="updateAdminMemberDateByIdx" parameterType="int">
+		update login_log set lastlogindate = sysdate
+		where idx = #{idx}
+	</update>
+	
+	<!-- *** 회원 복원 *** -->
+	<update id="updateMemberStatusInByIdx" parameterType="int">
+		update login_log set member_status = 1
+		where idx = #{idx}
+	</update>
+	
+	<!-- *** 비밀번호 찾기 *** -->
+	<!-- === 2019.01.24 === 비밀번호 찾기 시작 -->
+	<!-- 아이디와 이메일로 회원이 있는지 찾기 -->
+	<select id="selectMemberIsByUseridEmail" parameterType="HashMap" resultType="int">
+		select count(*)
+		from member a join login_log b
+		ON a.idx = b.idx
+		where b.member_status = 1 and userid = #{USERID} and a.name = #{NAME}
+	</select>
+	<!-- === 2019.01.24 === 비밀번호 찾기 -->
+	
+	<!-- === 2019.01.25 === 비밀번호 변경 -->
+	<!-- *** 비밀번호 변경 *** -->
+	<update id="updateMemberPwdByUserid" parameterType="HashMap">
+		update member set pwd = #{PWD}
+		where userid = #{USERID}
+	</update>
+	
+	<update id="updateLogin_logPwdByUserid" parameterType="HashMap">
+		update login_log set fk_pwd = #{PWD}
+		where fk_userid = #{USERID}
+	</update>
+	<!-- === 2019.01.25 === 비밀번호 변경 -->
+	
+	<!-- === 2019.02.13 === -->
+	<!-- *** 아이디 찾기 *** -->
+	<select id="selectMemberIdByNamePhone" parameterType="HashMap" resultType="String">	
+		select userid
+		from member
+		where name = #{NAME} and phone = #{PHONE}
+	</select>
+	<!-- === 2019.02.13 === -->
+</mapper>

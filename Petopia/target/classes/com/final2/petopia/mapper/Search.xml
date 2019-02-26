@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="search">
+	
+	<!-- ====== >>>> 중요 <<<< ===== 
+	     HashMap 타입으로 매개변수를 받아온 것을 꺼내서 사용할때
+	     1. 데이터로 사용할때는 #{key명} 이고,
+	     2. myBatis 에서 제공하는 if 엘리먼트 안에서 사용할때는
+	              그냥 그대로 <if test="key명"> 이렇게 사용한다.
+	        if test="key명" 인데 key명은 HashMap의 키이다.
+	     3. 식별자(테이블명, 컬럼명)로 사용할때는 ${key명} 이다.         
+	--> 
+	<select id="addrCount" parameterType="String" resultType="int">
+		select count(*) as addrCnt
+		from biz_info
+		where addr1 like '%' || #{searchWord} || '%'
+	</select>
+
+	<select id="hsptalCount" parameterType="String" resultType="int">
+		select count(*) as hsptalCnt
+		from member M JOIN biz_info B
+		on M.idx = B.idx_biz
+		where membertype = 2 and biztype = 1 and name like '%' || #{searchWord} || '%'
+	</select>
+
+	<select id="pharmCount" parameterType="String" resultType="int">
+		select count(*) as pharmCnt
+		from member M JOIN biz_info B
+		on M.idx = B.idx_biz
+		where membertype = 2 and biztype = 2 and name like '%' || #{searchWord} || '%'
+	</select>
+	
+	<select id="getFullnameAndIdx" parameterType="String" resultType="com.final2.petopia.model.Biz_MemberVO">
+		select idx as idx_biz, name
+		from biz_info B JOIN member M
+		on B.idx_biz = M.idx
+		where M.name like '%' || #{searchWord} || '%'
+	</select>
+	
+	<select id="getBizmemListByword" parameterType="map" resultType="com.final2.petopia.model.Biz_MemberVO">		
+		select distinct name, idx_biz, latitude, longitude, prontimg, biztype, startpoint as avg_startpoint
+		from
+		(
+		select name, idx_biz, latitude, longitude, prontimg, biztype
+		from biz_info B JOIN member M
+		on B.idx_biz = M.idx
+		FULL JOIN review R
+		on M.idx = R.fk_idx_biz
+		) V RIGHT JOIN 
+		(
+		select idx_biz as idx_biz2, nvl(round(avg(startpoint)), 0) as startpoint
+		from biz_info B JOIN member M
+		on B.idx_biz = M.idx
+		FULL JOIN review R
+		on M.idx = R.fk_idx_biz
+		where 1=1 
+		<if test="WHERENO == 1">
+			and B.addr1 like '%' || #{SEARCHWORD} || '%'
+		</if>
+		<if test="WHERENO == 2">
+			<if test="SEARCHWORD != null">
+			and M.name like '%' || #{SEARCHWORD} || '%'
+			</if>
+			and B.biztype = 1
+		</if>
+		<if test="WHERENO == 3">
+			<if test="SEARCHWORD != null">
+			and M.name like '%' || #{SEARCHWORD} || '%'
+			</if>
+			and B.biztype = 2
+		</if>
+		group by idx_biz
+		) P
+		on V.idx_biz = P.idx_biz2
+		<if test="ORDERBYNO == 1"> <!-- 평점순 -->
+			order by startpoint desc
+		</if>
+		<if test="ORDERBYNO == 2"> <!-- 거리순 -->
+			order by ${STR_NUMBERS}
+		</if>
+	</select>
+	
+	<select id="getBizmemListByidx" parameterType="map" resultType="com.final2.petopia.model.Biz_MemberVO">		
+		select fk_idx as idx_biz, name, latitude, longitude, prontimg, biztype, startpoint as avg_startpoint
+		from
+		(
+		    select fk_idx, name, latitude, longitude, prontimg, biztype, cnt
+		    from
+		    (
+		        select fk_idx, count(*) as cnt
+		        from have_tag H JOIN biz_info B
+		        on H.fk_idx = B.idx_biz
+		        where fk_tag_uid in (select fk_tag_uid from have_tag where fk_idx = #{LOGINUSER_IDX})
+		        group by fk_idx
+		        order by cnt desc
+		    ) V JOIN
+		    (
+		        select idx, name, latitude, longitude, prontimg, biztype
+		        from member M JOIN biz_info B
+		        on M.idx = B.idx_biz
+		    ) T
+		    on V.fk_idx = T.idx
+		    order by cnt desc
+		) Y JOIN
+		(
+		    select idx_biz, nvl(round(avg(startpoint)), 0) as startpoint
+		    from biz_info B JOIN member M
+		    on B.idx_biz = M.idx
+		    FULL JOIN review R
+		    on M.idx = R.fk_idx_biz
+		    group by idx_biz
+		) X
+		on Y.fk_idx = X.idx_biz
+		<if test="ORDERBYNO == 1"> <!-- 평점순 -->
+			order by cnt desc, startpoint desc
+		</if>
+		<if test="ORDERBYNO == 2"> <!-- 거리순 -->
+			order by ${NUMBERS}
+		</if>
+	</select>
+	
+	<select id="recommCount" parameterType="int" resultType="int">
+		select count(*)
+		from
+		(
+		    select fk_idx, count(*) as cnt
+		    from have_tag H JOIN biz_info B
+		    on H.fk_idx = B.idx_biz
+		    where fk_tag_uid in (select fk_tag_uid from have_tag where fk_idx = #{LOGINUSER_IDX})
+		    group by fk_idx
+		    order by cnt desc
+		) V
+	</select>
+	
+	<select id="getBizmemListByRecord" parameterType="map" resultType="com.final2.petopia.model.Biz_MemberVO">
+	    select fk_idx_biz as idx_biz, name, latitude, longitude, prontimg, biztype, startpoint as avg_startpoint
+	    from
+	        (
+	            select fk_idx_biz, name, latitude, longitude, prontimg, biztype, cnt
+	            from 
+	            (
+	                select fk_idx_biz, count(*) as cnt 
+	                from reservation 
+	                where fk_idx in (select distinct fk_idx 
+	                				 from reservation 
+	                				 where fk_idx_biz = (select func_bestHospital(#{LOGINUSER_IDX}) 
+	                									 from dual) 
+	                				 and fk_idx != #{LOGINUSER_IDX}
+	                				 and reservation_status = 3) 
+	               	and fk_idx_biz != (select func_bestHospital(#{LOGINUSER_IDX}) from dual)
+	                and reservation_status = 3
+	                group by fk_idx_biz
+	                order by cnt desc
+	            ) V JOIN
+	            (
+	                select idx, name, latitude, longitude, prontimg, biztype
+	                from member M JOIN biz_info B
+	                on M.idx = B.idx_biz
+	            ) T
+	            on V.fk_idx_biz = T.idx
+			) Y JOIN
+			(
+			    select idx_biz, nvl(round(avg(startpoint)), 0) as startpoint
+			    from biz_info B JOIN member M
+			    on B.idx_biz = M.idx
+			    FULL JOIN review R
+			    on M.idx = R.fk_idx_biz
+			    group by idx_biz
+			) X
+			on Y.fk_idx_biz = X.idx_biz
+			<if test="ORDERBYNO == 1"> <!-- 평점순 -->
+				order by cnt desc, startpoint desc
+			</if>
+			<if test="ORDERBYNO == 2"> <!-- 거리순 -->
+				order by ${NUMBERS}
+			</if>
+	</select>
+	
+	<select id="RecordCount" parameterType="int" resultType="int">
+		select count(*)
+        from 
+        (
+            select fk_idx_biz, count(*) as cnt 
+            from reservation 
+            where fk_idx in (select distinct fk_idx 
+            				 from reservation 
+            				 where fk_idx_biz = (select func_bestHospital(#{LOGINUSER_IDX}) 
+            									 from dual) 
+            				 and fk_idx != #{LOGINUSER_IDX}
+            				 and reservation_status = 3) 
+           	and fk_idx_biz != (select func_bestHospital(#{LOGINUSER_IDX}) from dual)
+           	and reservation_status = 3
+            group by fk_idx_biz
+            order by cnt desc
+        )
+	</select>
+	
+	<select id="getCountReservRecord" parameterType="int" resultType="int">
+	    select count(*) 
+	    from reservation
+	    where fk_idx = #{LOGINUSER_IDX}
+	</select>
+	
+</mapper>

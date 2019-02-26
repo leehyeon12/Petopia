@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="chat">
+
+<!-- idx에 따라 알람테이블에 code 삽입 -->
+ <insert id="addcode" parameterType="HashMap">
+	insert into notification (not_UID, fk_idx, not_type, not_message, not_date, not_readcheck, not_remindstatus, not_time, not_URL)
+	values(seq_notification_UID.nextval, 90, 5, #{code}, sysdate, default, default, default, 'http://26.42.136.15:9090/petopia/chat.pet') <!-- 본인 아이피로 변경해주세요 -->
+</insert>
+
+<!-- idx에 따라 비디오알람테이블에 code 삽입 -->
+ <insert id="addvideocode" parameterType="HashMap">
+	insert into notification (not_UID, fk_idx, not_type, not_message, not_date, not_readcheck, not_remindstatus, not_time, not_URL)
+	values(seq_notification_UID.nextval, 90, 5, #{code}, sysdate, default, default, default, #{URL})
+</insert>
+
+<!-- code에 따라 접속  -->
+ <select id="viewcode" parameterType="String" resultType="String">
+ 	select not_message
+	from notification
+	where DBMS_LOB.INSTR(not_message, #{code})>0 and rownum = 1
+ </select>
+
+ 
+<!-- idx 값 가져오기 -->
+ <select id="viewidx" parameterType="String" resultType="String">
+    SELECT  DBMS_LOB.SUBSTR(substr(ltrim(not_message, '1234567890'),2), 1000, 1) AS CONT_SUB
+  FROM notification
+  WHERE DBMS_LOB.INSTR(substr(ltrim(not_message, '1234567890'),1), '-', 1, 1) > 0 and fk_idx = 90 and rownum = 1
+ </select>
+ 
+<!-- idx에 따라 회원정보 가져오기 -->
+  <select id="viewuserid" parameterType="String" resultType="String">
+ 	select userid 
+	from
+	(
+	    select b.name as biz_name, docname
+	    from member b join doctors D
+	    on b.idx = d.fk_idx_biz
+	    where b.idx= 90
+	)
+	join
+	(
+	    select userid
+	    from member
+	    where idx= #{idx}
+	)
+	on 1=1
+ </select>
+ 
+ <!-- idx에 따라 회원정보 가져오기 -->
+  <select id="viewname_biz" parameterType="String" resultType="String">
+ 	select biz_name 
+	from
+	(
+	    select b.name as biz_name, docname
+	    from member b join doctors D
+	    on b.idx = d.fk_idx_biz
+	    where b.idx= 90
+	)
+	join
+	(
+	    select userid
+	    from member
+	    where idx= #{idx}
+	)
+	on 1=1
+ </select>
+ 
+ <!-- idx에 따라 회원정보 가져오기 -->
+  <select id="viewdocname" parameterType="String" resultType="String">
+ 	select docname 
+	from
+	(
+	    select b.name as biz_name, docname
+	    from member b join doctors D
+	    on b.idx = d.fk_idx_biz
+	    where b.idx= 90
+	)
+	join
+	(
+	    select userid
+	    from member
+	    where idx= #{idx}
+	)
+	on 1=1
+ </select>
+
+ <insert id="insertall" parameterType="HashMap">
+ 	insert into video_advice(va_UID, fk_idx, fk_idx_biz, chatcode, fk_userid, fk_name_biz, fk_docname, Time)
+	values(seq_video_advice_UID.nextval, #{idx}, 90, #{code}, #{fk_userid}, #{fk_name_biz}, #{fk_docname}, sysdate)
+ </insert>
+ 
+ <resultMap type="java.util.HashMap" id="getloglist"> 
+		<result property="time" 	     column="time" 			javaType="String" />
+		<result property="fk_userid" 	 column="fk_userid" 	javaType="String" />
+		<result property="chatcode" 	 column="chatcode" 		javaType="String" />
+		<result property="fk_name_biz" 	 column="fk_name_biz" 	javaType="String" />
+		<result property="fk_docname"    column="fk_docname" 	javaType="String" />
+ </resultMap>
+ 
+ <select id="getloglist" resultMap="getloglist" parameterType="int">	
+		select time, fk_userid, chatcode, fk_name_biz, fk_docname
+		from video_advice
+		where fk_idx_biz = #{fk_idx}
+		order by va_UID
+ </select>
+ 
+</mapper>

@@ -1,0 +1,618 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+ <mapper namespace="chart">
+
+<!--탭에 넣을 예약번호 가져오기  -->
+	<select id="selecttabuid" resultType="int" parameterType="HashMap">
+		select reservation_uid
+		from reservation
+		where fk_idx = #{idx} and reservation_date = #{rdate}
+	</select> 
+
+<!-- 병원예약 정보  -->
+<resultMap type="HashMap" id="rmap_like_reservationVO">
+      <result property="reservation_UID" column="RESERVATION_UID" javaType="String"/>
+      <result property="fk_idx" column="FK_IDX" javaType="String"/>
+      <result property="fk_idx_biz" column="FK_IDX_BIZ" javaType="String"/>
+      <result property="fk_schedule_UID" column="FK_SCHEDULE_UID" javaType="String"/>
+      <result property="fk_pet_UID" column="FK_PET_UID" javaType="String"/>
+      <result property="reservation_DATE" column="RESERVATION_DATE" javaType="String"/>
+      <result property="reservation_type" column="RESERVATION_TYPE" javaType="String"/>
+      <result property="pet_name" column="PET_NAME" javaType="String"/>
+      <result property="pet_type" column="PET_TYPE" javaType="String"/>
+   </resultMap>
+<select id="selectreserveinfo" parameterType="String" resultMap="rmap_like_reservationVO">
+     select A.reservation_UID, A.fk_idx, A.fk_idx_biz, A.fk_schedule_UID, A.fk_pet_UID
+    		, to_char(A.reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, 
+    		decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+   			, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+	 from reservation A join pet_info C
+	 on A.fk_pet_UID = C.pet_UID
+	 where A.fk_idx_biz = #{idx}
+ </select>
+<!-- 0124 -->
+<resultMap type="HashMap" id="rmap_BizRvChart">
+      <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+      <result property="fk_idx" 			column="FK_IDX"             javaType="String"/>
+      <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+      <result property="fk_schedule_UID"    column="FK_SCHEDULE_UID"    javaType="String"/>
+      <result property="fk_pet_UID" 	    column="FK_PET_UID"         javaType="String"/>
+      <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+      <result property="reservation_type"   column="RESERVATION_TYPE"   javaType="String"/>
+      <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+      <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+      <result property="name"               column="NAME"               javaType="String"/>
+      <result property="phone"              column="PHONE"              javaType="String"/>
+      <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+      <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+   </resultMap>
+
+	<select id="selectBizReservationList" parameterType="HashMap" resultMap="rmap_BizRvChart">
+		select rno,reservation_UID, fk_idx,fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate
+			, reservation_DATE, reservation_status,  reservation_type
+			,name,phone,pet_name,  pet_type
+		from
+		(
+			select rownum as rno,A.reservation_UID, A.fk_idx, A.fk_idx_biz, A.fk_schedule_UID, A.fk_pet_UID, to_char(A.bookingdate, 'yyyy-mm-dd hh24:mi') as bookingdate
+				, to_char(A.reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, reservation_status, decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+				, B.name, B.phone,  C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+			from reservation A join member B
+			on A.fk_idx = B.idx
+			join pet_info C
+			on A.fk_pet_UID = C.pet_UID
+			where A.fk_idx_biz = #{idx_biz} 
+		)
+		where rno between #{startRno} and #{endRno}
+	</select>
+   
+   <select id="getTotalCountNoSearch" parameterType="int" resultType="int">
+      select count(*) as cnt
+      from reservation
+      where fk_idx_biz = #{idx_biz}
+   </select>
+   
+   <!-- 0207 예약 타입 불러오기  -->
+   <select id="selectrtype" parameterType="String" resultType="int">
+     select reservation_type
+     from reservation 
+     where reservation_UID = #{ruid}
+   </select>
+   
+   <!-- 0207  결제 정보가 없을때 기본 정보 불러오기 -->
+   <resultMap type="HashMap" id="reserverInfoNopay">
+    <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+    <result property="fk_idx"             column="FK_IDX"             javaType="String"/>
+    <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+    <result property="fk_pet_UID"         column="FK_PET_UID"         javaType="String"/>
+    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+    <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+    <result property="reservation_type"   column="RESERVATION_TYPE"   javaType="String"/>
+    <result property="name"               column="NAME"               javaType="String"/>
+    <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+    <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+   </resultMap>
+   <select id="selectReserverInfoNopay" parameterType="String" resultMap="reserverInfoNopay">
+   select A.reservation_UID, A.fk_idx, A.fk_idx_biz,  A.fk_pet_UID
+					, to_char(A.reservation_DATE, 'yyyy-mm-dd') as reservation_DATE
+					, to_char(A.bookingdate, 'yyyy-mm-dd') as bookingdate
+					,reservation_status, 
+	                decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+					, B.name, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+	from reservation A join member B
+	on A.fk_idx = B.idx
+	join pet_info C
+	on A.fk_pet_UID = C.pet_UID
+	where A.reservation_UID =#{ruid}
+   </select>
+   
+   <!-- 0207 결제 정보가 있을 때 인서트 창의 기본정보 불러오기 -->
+   <resultMap type="HashMap" id="reserverInfo">
+    <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+    <result property="fk_idx"             column="FK_IDX"             javaType="String"/>
+    <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+    <result property="fk_pet_UID"         column="FK_PET_UID"         javaType="String"/>
+    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+    <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+    <result property="reservation_type"   column="RESERVATION_TYPE"   javaType="String"/>
+    <result property="name"               column="NAME"               javaType="String"/>
+    <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+    <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+    <result property="payment_total"      column="PAYMENT_TOTAL"      javaType="String"/>
+    <result property="payment_point"      column="PAYMENT_POINT"      javaType="String"/>
+    <result property="payment_pay"        column="PAYMENT_PAY"        javaType="String"/>
+   </resultMap>
+   <select id="selectReserverInfo" parameterType="String" resultMap="reserverInfo">
+   
+	 select A.reservation_UID, A.fk_idx, A.fk_idx_biz,  A.fk_pet_UID
+					, to_char(A.reservation_DATE, 'yyyy-mm-dd') as reservation_DATE
+					, to_char(A.bookingdate, 'yyyy-mm-dd') as bookingdate
+					,reservation_status, 
+	                decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+					, B.name, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+	                ,p.payment_total,p.payment_point,p.payment_pay*-1 as payment_pay
+	from reservation A join member B
+	on A.fk_idx = B.idx
+	join pet_info C
+	on A.fk_pet_UID = C.pet_UID
+	join payment P
+	on A.reservation_UID =P.fk_reservation_UID
+	where A.reservation_UID =#{ruid}
+   </select>
+   
+   
+   
+   <!--0125  의사 리스트 불러오기-->
+   <select id="selectDocList" parameterType="String" resultType="HashMap" >
+	   select D.docname 
+	   from doctors D join  biz_info B
+	   on D.fk_idx_biz = B.idx_biz
+	   join reservation R 
+	   on R.fk_idx_biz = B.idx_biz
+	   where reservation_uid=#{ruid}
+   </select>
+   <!--  차트 인서트  -->
+   <insert id="insertChart" parameterType="com.final2.petopia.model.ChartVO">
+     insert into chart(chart_UID,fk_pet_UID,fk_idx,chart_type,biz_name,bookingdate
+	                   ,reservation_DATE,doc_name,cautions,chart_contents,
+	                   payment_pay,payment_point,addpay,totalpay,fk_reservation_UID)  
+     values(#{chart_UID},#{fk_pet_UID},#{fk_idx},#{chart_type}, 
+		     #{biz_name},#{bookingdate},#{reservation_DATE},
+		     #{doc_name},#{cautions},#{chart_contents},#{payment_pay},#{payment_point},#{addpay},#{totalpay},#{fk_reservation_UID}) 
+      
+   </insert>
+   <!-- 0208 결제 정보가 없는 차트 인서트  -->
+     <!--  차트 인서트  -->
+   <insert id="insertChartNopay" parameterType="com.final2.petopia.model.ChartVO">
+     insert into chart(chart_UID,fk_pet_UID,fk_idx,chart_type,biz_name,bookingdate
+	                   ,reservation_DATE,doc_name,cautions,chart_contents
+	                  ,fk_reservation_UID)  
+     values(#{chart_UID},#{fk_pet_UID},#{fk_idx},#{chart_type}, 
+		     #{biz_name},#{bookingdate},#{reservation_DATE},
+		     #{doc_name},#{cautions},#{chart_contents},#{fk_reservation_UID}) 
+   </insert>
+   
+   <!-- 0128 0130 차트 인서트안의 처방전 부분 인서트 -->
+    <insert id="insertPre" parameterType="HashMap">
+    insert into prescription (rx_UID,chart_UID,rx_name,dose_number,dosage,rx_regName,rx_cautions,rx_notice)
+    values (seq_prescription_UID.nextval,#{chart_UID},#{rx_name}
+             ,#{dose_number},#{dosage},#{rx_regName},#{rx_cautions},#{rx_notice})
+   </insert> 
+  
+  <!-- 예약 스테이터스 변경 -->
+   <update id="updaterstatus" parameterType="String" >
+    update reservation set reservation_status = 3
+    where reservation_status=2 and reservation_uid=#{ruid}
+   </update> 
+   
+   <!--  chartuid 채번  -->
+   <select id="getChartuid"   resultType="String">
+    select chart_seq.nextval
+    from dual
+   </select>
+  
+   <!-- 0131 수정/ 0209 0212 결제정보가 있을때 차트 상세보기  -->
+   <resultMap type="HashMap" id="SelectChartInfo">
+    <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+    <result property="chart_UID"          column="CHART_UID"          javaType="String"/>
+    <result property="fk_idx"             column="FK_IDX"             javaType="String"/>
+    <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+    <result property="fk_pet_UID"         column="FK_PET_UID"         javaType="String"/>
+    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+    <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+    <result property="reservation_type"   column="RESERVATION_TYPE"   javaType="String"/>
+    <result property="name"               column="NAME"               javaType="String"/>
+    <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+    <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+    <result property="totalpay"           column="TOTALPAY"      javaType="String"/>
+    <result property="payment_point"      column="PAYMENT_POINT"      javaType="String"/>
+    <result property="payment_pay"        column="PAYMENT_PAY"        javaType="String"/>
+    <result property="biz_name"           column="BIZ_NAME"           javaType="String"/>
+    <result property="cautions"           column="cautions"           javaType="String"/>
+    <result property="chart_contents"     column="CHART_CONTENTS"     javaType="String"/>
+    <result property="addpay"             column="ADDPAY"             javaType="String"/>
+    <result property="doc_name"           column="DOC_NAME"           javaType="String"/>
+  
+   </resultMap>
+   <select id="selectChart" parameterType="HashMap" resultMap="SelectChartInfo">
+     
+        select A.reservation_UID, A.fk_idx, A.fk_idx_biz,  A.fk_pet_UID,f.chart_uid
+			 , to_char(A.reservation_DATE, 'yyyy-mm-dd') as reservation_DATE
+			 , to_char(A.bookingdate, 'yyyy-mm-dd') as bookingdate
+			 ,reservation_status 
+			 ,decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+			 , B.name, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+			 ,f.totalpay,f.payment_point,f.payment_pay*-1 as payment_pay,f.addpay,V.biz_name,f.cautions,f.chart_contents,f.doc_name
+             
+	from reservation A join member B
+		on A.fk_idx = B.idx
+		join pet_info C
+		on A.fk_pet_UID = C.pet_UID
+	    join view_biz_memberinfo V
+	    on V.idx_biz =A.fk_idx_biz
+	    join Chart F
+	    on F.fk_idx =A.fk_idx
+		where A.reservation_UID =#{ruid} and  F.chart_uid = #{cuid}
+   </select>
+   
+     <!--  0209 결제정보가 없을때  차트 상세보기  -->
+   <resultMap type="HashMap" id="SelectChartInfo_Nopay">
+    <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+    <result property="chart_UID"          column="CHART_UID"          javaType="String"/>
+    <result property="fk_idx"             column="FK_IDX"             javaType="String"/>
+    <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+    <result property="fk_pet_UID"         column="FK_PET_UID"         javaType="String"/>
+    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+    <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+    <result property="reservation_type"   column="RESERVATION_TYPE"   javaType="String"/>
+    <result property="name"               column="NAME"               javaType="String"/>
+    <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+    <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+    <result property="biz_name"           column="BIZ_NAME"           javaType="String"/>
+    <result property="cautions"           column="cautions"           javaType="String"/>
+    <result property="chart_contents"     column="CHART_CONTENTS"     javaType="String"/>
+    <result property="doc_name"           column="DOC_NAME"           javaType="String"/>
+  
+   </resultMap>
+   <select id="selectChartNopay" parameterType="HashMap" resultMap="SelectChartInfo_Nopay">
+      select A.reservation_UID, A.fk_idx, A.fk_idx_biz,  A.fk_pet_UID,f.chart_uid
+			 , to_char(A.reservation_DATE, 'yyyy-mm-dd') as reservation_DATE
+			 , to_char(A.bookingdate, 'yyyy-mm-dd') as bookingdate
+			 ,reservation_status 
+			 ,decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as reservation_type
+			 , B.name, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+			 ,V.biz_name ,f.cautions,f.chart_contents,f.doc_name
+             
+	from reservation A join member B
+		on A.fk_idx = B.idx
+		join pet_info C
+		on A.fk_pet_UID = C.pet_UID
+	    join view_biz_memberinfo V
+	    on V.idx_biz =A.fk_idx_biz
+	    join Chart F
+	    on F.fk_idx =A.fk_idx
+		where A.reservation_UID =#{ruid} and  F.chart_uid = #{cuid}
+   </select>
+   
+   <!--  0131 차트 셀렉트할떄 필요한 차트번호 가져오기 -->
+   <select id="getChartuidbyruid" parameterType="String" resultType="String">
+	    select chart_UID
+	    from chart C join reservation R
+	    on c.fk_reservation_UID =R.reservation_UID
+	    where reservation_UID=#{ruid}
+   </select>
+   
+   <select id="getPuid" parameterType="HashMap" resultType="String">
+	    select P.rx_uid
+	    from prescription P join chart C
+	    on P.chart_uid = C.chart_uid
+	    join reservation R
+	    on C.fk_idx =R.fk_idx
+	    where c.chart_uid =#{cuid} and r.reservation_uid=#{ruid}
+   </select>
+   
+   <!-- 0129 예약자번호로 처방전 인서트 내용 가져오기-->
+   <resultMap type="HashMap" id="insertpreinfobyruid">
+    <result property="reservation_UID"    column="RESERVATION_UID"    javaType="String"/>
+    <result property="chart_UID"          column="CHART_UID"          javaType="String"/>
+    <result property="fk_idx"             column="FK_IDX"             javaType="String"/>
+    <result property="fk_idx_biz"         column="FK_IDX_BIZ"         javaType="String"/>
+    <result property="fk_pet_UID"         column="FK_PET_UID"         javaType="String"/>
+    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+    <result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+    <result property="name"               column="NAME"               javaType="String"/>
+    <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+    <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+    <result property="biz_name"           column="BIZ_NAME"           javaType="String"/>
+   </resultMap>
+   <select id="selectpreinfobyruid" parameterType="String" resultMap="insertpreinfobyruid"> 
+    select A.reservation_UID, A.fk_idx, A.fk_idx_biz,  A.fk_pet_UID,f.chart_uid
+			, to_char(A.reservation_DATE, 'yyyy-mm-dd') as reservation_DATE
+			, to_char(A.bookingdate, 'yyyy-mm-dd') as bookingdate
+			,reservation_status,B.name, C.pet_name
+			, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+			,V.biz_name
+	from reservation A join member B
+		 on A.fk_idx = B.idx
+		 join pet_info C
+		 on A.fk_pet_UID = C.pet_UID
+	     join view_biz_memberinfo V
+	     on V.idx_biz =A.fk_idx_biz
+	     join Chart F
+	     on F.fk_idx =A.fk_idx
+		 where A.reservation_UID =#{ruid}
+   </select>
+   
+   <!-- 0131 병원 페이지에서 차트 업데이트 하기  -->
+   <update id="Updatechart" parameterType="com.final2.petopia.model.ChartVO">
+      update chart set  doc_name=#{doc_name},cautions=#{cautions}, chart_contents=#{chart_contents}
+      where chart_UID=#{chart_UID}
+   </update>
+   
+   <!-- //0131병원페이지에서 차트 수정시 처방전 수정 -->
+   <update id="Updatepre" parameterType="HashMap">
+    update prescription set rx_name=#{rx_name}
+                         ,dosage=#{dosage}
+                         ,dose_number=#{dose_number}
+                         , rx_cautions=#{rx_cautions}
+                         , rx_notice=#{rx_notice}
+    where chart_UID=#{cuid} and rx_uid=#{rx_uid}
+   </update>
+   
+   <resultMap type="HashMap" id="selectpre">
+   <result property="rx_uid"             column="RX_UID"             javaType="String"/>  
+    <result property="dosage"             column="DOSAGE"             javaType="String"/>  
+    <result property="dose_number"        column="DOSE_NUMBER"        javaType="String"/>  
+    <result property="rx_name"            column="RX_NAME"            javaType="String"/>
+     <result property="rx_cautions"       column="rx_cautions"        javaType="String"/> 
+      <result property="rx_notice"        column="rx_notice"          javaType="String"/>  
+   </resultMap>
+   <select id="selectPre" parameterType="map" resultMap="selectpre">
+       select rx_uid,rx_name, dosage,dose_number,rx_cautions,rx_notice
+       from prescription p join chart c
+       on p.chart_uid=c.chart_uid
+       where c.chart_uid=#{cuid}
+   </select>
+   
+   <!-- 190201 chart불러오기 -->
+   <resultMap type="HashMap" id="selectMyPrescription_info">
+     <result property="chart_uid"             column="CHART_UID"             javaType="String"/>
+     <result property="reservation_date"      column="RESERVATION_DATE"      javaType="String"/>
+     <result property="chart_type"            column="chartType"            javaType="String"/>
+   </resultMap>
+   <select id="selectMyPrescription" parameterType="String" resultMap="selectMyPrescription_info">
+   		select chart_uid, to_char(reservation_date, 'yyyy-mm-dd hh24:mi') as reservation_date
+				    , case  chart_type when 0 then '약국' when 1 then '진료' when 2 then '예방접종' when 3 then '수술' when 4 then '호텔링' end as chartType
+		from chart 
+		where fk_pet_uid =#{fk_pet_uid}
+   </select>
+   
+   
+   <!-- 0202 회원번호로 보유한 동물 마리 수 알아오기  -->
+    <select id="getPetmaribyidx" parameterType="int" resultType="int">
+     select count(*)
+	 from pet_info 
+	 where fk_idx=#{idx}
+    </select>
+    
+    <!-- 0202 회원번호로 pet_uid가 가장 작은 동물의 pet_uid 알아오기  -->
+    <select id="getMinpuidbyidx" parameterType="int" resultType="int">
+    select min(pet_uid) as pet_uid
+	from
+	(
+	    select pet_uid
+	    from pet_info 
+	    where fk_idx=#{idx}
+	) V
+    </select>
+   
+   <!-- 0202 pet_uid가 가장 작은 동물의 펫정보 가져오기  -->
+    <resultMap type="HashMap" id="Pinfobyminpuid">
+     <result property="pet_uid"       column="PET_UID"       javaType="String"/>
+     <result property="pet_birthday"  column="PET_BIRTHDAY"  javaType="String"/>
+     <result property="pet_weight"    column="PET_WEIGHT"    javaType="String"/>
+     <result property="pet_gender"    column="PET_GENDER"    javaType="String"/>
+    </resultMap>
+    <select id="getPinfobyminpuid" parameterType="int" resultMap="Pinfobyminpuid">
+	    select pet_uid,pet_birthday,pet_weight,
+	    decode(pet_gender, 1,'수컷',2,'암컷')as pet_gender
+		from pet_info
+		where pet_uid=#{minpuid}
+    </select>
+    
+    <!-- 0202 보유한 반려동물의 이미지와 이름 리스트 가져오기  -->
+	<resultMap type="HashMap" id="pmaplist">
+	 <result property="pet_uid"         column="PET_UID"         javaType="int"/>
+     <result property="pet_profileimg"  column="PET_PROFILEIMG"  javaType="String"/>
+     <result property="pet_name"        column="PET_NAME"        javaType="String"/>
+    </resultMap> 	    
+     <select id="getPmapListbyidx" parameterType="int" resultMap="pmaplist">
+	     select pet_uid,pet_profileimg,pet_name
+		 from pet_info
+		 where fk_idx=#{idx}
+     </select>
+     
+     <!-- 0209 펫이미지 클릭시 보여질 정보  -->
+    <resultMap type="HashMap" id="pinfo">
+     <result property="pet_uid"       column="PET_UID"       javaType="String"/>
+     <result property="pet_birthday"  column="PET_BIRTHDAY"  javaType="String"/>
+     <result property="pet_weight"    column="PET_WEIGHT"    javaType="String"/>
+     <result property="pet_gender"    column="PET_GENDER"    javaType="String"/>
+    </resultMap>
+     <select id="getPinfo" parameterType="String" resultMap="pinfo">
+        select pet_uid,pet_birthday,pet_weight,
+	    decode(pet_gender, 1,'수컷',2,'암컷')as pet_gender
+		from pet_info
+		where pet_uid=#{puid}
+     </select>
+     
+     <!-- 0210 개인회원이 마이페이지 진료관리에서 처방전 인서트 하기  -->
+     <insert id="insertmychart" parameterType="HashMap">
+        insert into prescription (rx_uid,chart_uid,rx_name,dose_number,dosage
+                                  ,rx_notice,rx_cautions,rx_regname)
+        values (seq_prescription_UID.nextval,#{cuid},#{rx_name},#{dose_number}
+                ,#{dosage},#{rx_notice},#{rx_cautions},#{rx_regname})
+     </insert>
+     
+     <!-- 0210  마이페이지에서 진료관리 클릭시 보여지는 병원 방문 날짜 리스트 가져오기-->
+     <resultMap type="HashMap" id="myday_typeList">
+	     <result property="reservation_date" column="RESERVATION_DATE"  javaType="String"/>
+	     <result property="chart_type"       column="CHART_TYPE"        javaType="String"/>
+	     <result property="reservedate"       column="RESERVEDATE"        javaType="String"/>
+	     <result property="reservation_uid"       column="RESERVATION_UID"        javaType="String"/>
+ 		<result property="chart_uid"       column="CHART_UID"        javaType="String"/>  
+ 		<result property="fk_idx"       column="FK_IDX"        javaType="String"/>  
+      </resultMap>
+     <select id="getmyreservedaylist" parameterType="HashMap" resultMap="myday_typeList">
+       select to_char(c.reservation_date,'mm-dd') as reservation_date
+              ,to_char(r.reservation_date,'yyyy-mm-dd hh24:mi:ss') as reservedate
+              ,decode(c.chart_type,0, '약국',1,'진료', 2,'예방접종',3,'수술',4,'호텔링')as chart_type
+              , r.reservation_uid,c.chart_uid,c.fk_idx
+            from chart c join reservation r
+            on c.fk_reservation_uid = r.reservation_uid
+            where to_char(c.reservation_date,'yyyy-mm') = to_char(sysdate,'yyyy-mm') 
+                 and c.fk_idx=#{idx} and c.fk_pet_uid=#{minpuid}
+     </select>
+     
+     <!-- 0210 가장 작은예약번호 알아오기 (마이페이지 진료관리 처방전 입력에 필요 ) -->
+     <select id="getminRuid" resultType="String" parameterType="HashMap">
+       select reservation_uid
+	   from       
+		(       
+		select rownum as rno,  reservation_uid
+		from
+		    (
+		    select reservation_uid
+		    from reservation 
+		    where fk_idx=#{idx} and fk_pet_uid=#{minpuid}
+		    and reservation_status in (1,2,3)
+		    order by reservation_date desc
+		    ) v
+		) t
+		where t.rno=1
+     </select>
+     
+     <!-- 0210 마이페이지에서 잔료관리 클릭시  보여지는 처방전  인서트 창에 불러올 기본 정보  -->
+     <resultMap type="HashMap" id="myPreinfo">
+	     <result property="chart_uid"           column="CHART_UID"         javaType="String"/>
+	     <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+	     <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+	     <result property="chart_type"           column="CHART_TYPE"           javaType="String"/>
+	     <result property="cautions"           column="CAUTIONS"           javaType="String"/>
+	     <result property="chart_contents"    column="CHART_CONTENTS"     javaType="String"/>
+        <result property="biz_name"           column="BIZ_NAME"           javaType="String"/>
+	    <result property="doc_name"           column="DOC_NAME"           javaType="String"/>
+	    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+	    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+	    <result property="payment_total"      column="PAYMENT_TOTAL"      javaType="String"/>
+	    <result property="payment_point"      column="PAYMENT_POINT"      javaType="String"/>
+	    <result property="payment_pay"        column="PAYMENT_PAY"        javaType="String"/>
+	    <result property="addpay"             column="ADDPAY"             javaType="String"/>
+	     <result property="totalpay"             column="TOTALPAY"             javaType="String"/>
+     </resultMap>
+     <select id="getmyPreinfo" resultMap="myPreinfo" parameterType="HashMap">
+      select  c.chart_uid,a.pet_name,decode(a.pet_type,'cat','고양이','dog','강아지','smallani','소동물','etc','기타동물') as pet_type
+               ,c.cautions,c.chart_contents,r.bookingdate,r.reservation_date,c.addpay,c.doc_name
+               ,p.payment_total,p.payment_point,p.payment_pay*-1 as payment_pay,biz_name
+	  from chart C join reservation R
+	  on C.fk_reservation_uid=R.reservation_uid
+	  join payment P
+      on p.fk_reservation_uid = R.reservation_uid
+      join pet_info a
+      on a.pet_uid =c.fk_pet_uid
+	  where c.fk_idx=#{idx} and c.fk_pet_uid=#{minpuid} and r.reservation_uid = #{minruid}
+     </select>
+     
+     <!-- 0210 마이페이지 진료관리에서 처방전 인서트할때 필요한 차트 유아이디  -->
+     <select id="getcuid" parameterType="String" resultType="String" >
+      select chart_uid
+      from chart C join reservation R
+      on C.fk_reservation_uid = R.reservation_uid
+      where reservation_uid=#{minruid}
+     </select>
+     
+     <!-- 0211 ajax로  탭 클릭시 마이페이지 처방전 기본정보 불러오기 0216-->
+     <select id="getmyPreinfobyajax" parameterType="String" resultMap="myPreinfo">
+       select  c.chart_uid, a.pet_name, decode(a.pet_type,'cat','고양이','dog','강아지','smallani','소동물','etc','기타동물') as pet_type
+		        , c.cautions, c.chart_contents
+		        , to_char(c.bookingdate,'yyyy-mm-dd') as bookingdate
+		        ,to_char(c.reservation_date,'yyyy-mm-dd') as reservation_date,  c.doc_name
+		        ,decode(c.chart_type,'0','약국','1','일반진료','2','예방접종','3','수술','4','호텔링') as chart_type
+		        , c.payment_point, c.payment_pay*-1 as payment_pay,c.totalpay,c.addpay, biz_name
+		from pet_info a JOIN chart c
+		ON a.pet_uid = c.fk_pet_uid
+        where chart_uid=#{chart_uid}
+     </select>
+     
+     <!--0210 예약 날짜 및 시간과 맞는 펫 유아이디 가져오기  -->
+     <select id="getpetuidbyajax" parameterType="String" resultType="int">
+        select pet_uid
+		from pet_info p join chart c
+		on p.pet_uid=c.fk_pet_uid
+		join reservation r
+		on r.reservation_uid = c.fk_reservation_uid
+		where to_char(r.reservation_date,'yyyy-mm-dd hh24:mi:ss')=#{reservedate}
+     </select>
+     
+     <!-- //0210 예약날짜 및 시간과 맞는 예약번호 가져오기  -->
+     <select id="getruidbyajax" parameterType="String" resultType="String">
+        select r.reservation_uid
+		from pet_info p join chart c
+		on p.pet_uid=c.fk_pet_uid
+		join reservation r
+		on r.reservation_uid = c.fk_reservation_uid
+		where to_char(r.reservation_date,'yyyy-mm-dd hh24:mi:ss')=#{reservedate}
+     </select>
+     
+     
+     <!-- 0213 마이페이지 진료관리 차트 , 결제정보가 없는 -->
+        <resultMap type="HashMap" id="myPreinfoNopay">
+	     <result property="chart_uid"           column="CHART_UID"         javaType="String"/>
+	     <result property="pet_name"           column="PET_NAME"           javaType="String"/>
+	     <result property="pet_type"           column="PET_TYPE"           javaType="String"/>
+	     <result property="cautions"           column="CAUTIONS"           javaType="String"/>
+	     <result property="chart_contents"    column="CHART_CONTENTS"     javaType="String"/>
+        <result property="biz_name"           column="BIZ_NAME"           javaType="String"/>
+	    <result property="doc_name"           column="DOC_NAME"           javaType="String"/>
+	    <result property="bookingdate"        column="BOOKINGDATE"        javaType="String"/>
+	    <result property="reservation_DATE"   column="RESERVATION_DATE"   javaType="String"/>
+     </resultMap>
+     <select id="getmyPreinfobyajaxnopay" resultMap="myPreinfoNopay" parameterType="HashMap">
+     
+        select  c.chart_uid,a.pet_name,decode(a.pet_type,'cat','고양이','dog','강아지','smallani','소동물','etc','기타동물') as pet_type
+               ,c.cautions,c.chart_contents,r.bookingdate,r.reservation_date,c.addpay,c.doc_name
+               ,biz_name
+	  from chart C join reservation R
+	  on C.fk_reservation_uid=R.reservation_uid
+	  join payment P
+      on p.fk_reservation_uid = R.reservation_uid
+      join pet_info a
+      on a.pet_uid =c.fk_pet_uid
+	  where c.fk_idx=#{idx} and c.fk_pet_uid=#{puid} and r.reservation_uid = #{ruid}
+     </select>
+     
+    <!-- //0213 마이페이지에서 예약정보가 없는 개인 차트 인서트  -->
+    <insert id="InsertmyChartnoReserveEnd" parameterType="com.final2.petopia.model.ChartVO" >
+      insert into chart(chart_UID,fk_pet_UID,fk_idx,chart_type,biz_name
+	                   ,reservation_DATE,doc_name,cautions,chart_contents,totalpay)  
+     values(#{chart_UID},#{fk_pet_UID},#{fk_idx},#{chart_type}, 
+		     #{biz_name},#{reservation_DATE},
+		     #{doc_name},#{cautions},#{chart_contents},#{totalpay}) 
+    </insert>
+    
+    <!-- 0213 마이페이지에서 예약없는 차트 테이블에 cuid인서트후 처방전 테이블에 들어갈 cuid 구하기  -->
+    <select id="getmaxcuid" resultType="String">
+     select max(chart_uid)
+     from chart
+    </select>
+    
+    <!-- 0214 -->
+    <resultMap type="HashMap" id="pmapinfo">
+      <result property="pet_name" column="PET_NAME" javaType="String"/>
+      <result property="pet_type" column="PET_TYPE" javaType="String"/>
+    </resultMap>
+    <select id="getpnames" parameterType="String" resultMap="pmapinfo">
+      select pet_name,decode(
+      pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+      from pet_info
+      where pet_uid=#{puid}
+    </select>
+    
+    <!-- //0214 마이페이지에서 예약이 없는 차트 업데이트 하기 -->
+    <update id="Updatemychart" parameterType="com.final2.petopia.model.ChartVO">
+      update chart set  doc_name=#{doc_name},cautions=#{cautions}
+             , chart_contents=#{chart_contents},totalpay=#{totalpay}
+      where chart_UID=#{chart_UID}
+   </update>
+  
+	<!-- 0216 -->
+	<update id="updateNoshow" parameterType="String">
+	  update reservation set reservation_status =5
+	  where reservation_UID =#{reservation_UID}
+	</update>
+</mapper>

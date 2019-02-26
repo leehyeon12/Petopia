@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+
+<mapper namespace="care">
+
+
+	<!-- [19-01-24. 수정 시작_hyunjae] -->
+	<!-- //===== 반려동물 리스트 ===== -->
+	<resultMap type="java.util.HashMap" id="getPet_infoListMap"> 
+		<result property="PET_UID" 	       column="pet_UID" 		javaType="int" />
+		<result property="FK_IDX" 	       column="fk_idx" 			javaType="int" />
+		<result property="PET_NAME" 	   column="pet_name" 		javaType="String" />
+		<result property="PET_TYPE" 	   column="pet_type" 		javaType="String" />
+		<result property="PET_BIRTHDAY"    column="pet_birthday" 	javaType="String" />
+		<result property="PET_SIZE" 	   column="pet_size" 		javaType="String" />
+		<result property="PET_WEIGHT" 	   column="pet_weight" 		javaType="String" />
+		<result property="PET_GENDER" 	   column="pet_gender" 		javaType="String" />
+		<result property="PET_NEUTRAL" 	   column="pet_neutral" 	javaType="String" />
+		<result property="MEDICAL_HISTORY" column="medical_history" javaType="String" />
+		<result property="ALLERGY" 		   column="allergy" 		javaType="String" />
+		<result property="PET_PROFILEIMG"  column="pet_profileimg"  javaType="String" />
+	</resultMap>
+	<select id="getPet_infoList" resultMap="getPet_infoListMap" parameterType="int">	
+		select pet_UID, fk_idx, pet_name
+		     , decode(pet_type, 'dog', '강아지'
+		                      , 'cat', '고양이'
+		                      , 'smallani', '소동물'
+		                                  , '기타') as pet_type, pet_birthday, pet_size, pet_weight
+		     , decode(pet_gender, '1', '수컷'
+		                             , '암컷') as pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		from pet_info
+		where fk_idx = #{fk_idx} and
+		      pet_status in('1','2')
+		order by pet_UID desc
+	</select>
+	<!-- [19-01-24. 수정 끝_hyunjae] -->
+
+
+	<!-- //===== 반려동물 등록 ===== -->
+	<insert id="insertPet_info" parameterType="com.final2.petopia.model.PetVO">
+		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg)
+		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR}, #{pet_profileimg, jdbcType=VARCHAR})
+	</insert>
+	
+	
+	<!-- [19-01-25. 수정 시작_hyunjae] -->
+	<!-- //===== 케어 등록 caretype 가져오기 ===== -->
+	<resultMap type="java.util.HashMap" id="getCaretypeListMap">
+		<result property="CARETYPE_UID" 	column="caretype_UID" 	javaType="String" />
+		<result property="CARETYPE_NAME" 	column="caretype_name" 	javaType="String" />
+		<result property="CARETYPE_INFO"    column="caretype_info" 	javaType="String" />
+	</resultMap>
+	<select id="getCaretypeList" resultMap="getCaretypeListMap">
+		select caretype_UID, caretype_name, caretype_info
+		from caretype
+	</select>
+	
+	<!-- //===== 케어 등록 caretype_info 가져오기 ===== -->
+	<select id="getCaretype_infoList" parameterType="String" resultMap="getCaretypeListMap">
+		select caretype_UID, caretype_name, caretype_info
+		from caretype
+		where caretype_UID = #{caretype}
+	</select>
+	<!-- [19-01-25. 수정 끝_hyunjae] -->
+
+
+	<!-- //===== 케어 등록 ===== -->
+	<insert id="insertPetcare" parameterType="com.final2.petopia.model.CareVO">
+		insert into petcare(care_UID, fk_pet_UID, fk_caretype_UID, care_contents, care_memo, care_start, care_end, care_alarm, care_date)
+		values(seq_petcare_UID.nextval, #{fk_pet_UID}, #{fk_caretype_UID}, #{care_contents, jdbcType=VARCHAR}, #{care_memo}, #{care_start}, #{care_end}, #{care_alarm}
+			 , to_char(to_date(#{care_end}, 'yyyy-mm-dd hh24:mi') - #{care_alarm}*1/24/60, 'yyyy-mm-dd hh24:mi'))
+	</insert>
+	
+	
+	<!-- //===== 특정 반려동물관리 상세페이지 요청 ===== -->
+	<resultMap type="HashMap" id="Pet_InfoMap">
+		<result property="PET_UID" 	       	 column="pet_UID" 			javaType="int" />
+		<result property="FK_IDX" 	       	 column="fk_idx" 			javaType="int" />
+		<result property="PET_NAME" 	   	 column="pet_name" 			javaType="String" />
+		<result property="PET_TYPE" 	   	 column="pet_type" 			javaType="String" />
+		<result property="PET_BIRTHDAY"    	 column="pet_birthday" 		javaType="String" />
+		<result property="PET_SIZE" 	  	 column="pet_size" 			javaType="String" />
+		<result property="PET_WEIGHT" 	   	 column="pet_weight" 		javaType="String" />
+		<result property="PET_GENDER" 	   	 column="pet_gender" 		javaType="String" />
+		<result property="PET_NEUTRAL" 	   	 column="pet_neutral" 		javaType="String" />
+		<result property="MEDICAL_HISTORY" 	 column="medical_history" 	javaType="String" />
+		<result property="ALLERGY" 		   	 column="allergy" 			javaType="String" />
+		<result property="PET_PROFILEIMG"  	 column="pet_profileimg"    javaType="String" />
+		<result property="PREVIOUSPET_UID"   column="previouspet_UID"   javaType="String" />
+		<result property="PREVIOUSPET_NAME"  column="previouspet_name"  javaType="String" />
+		<result property="NEXTPET_UID"  	 column="nextpet_UID"  		javaType="String" />
+		<result property="NEXTPET_NAME"  	 column="nextpet_name"  	javaType="String" />
+	</resultMap>
+	<select id="getPet_info" parameterType="HashMap" resultMap="Pet_InfoMap">
+		select previouspet_UID, previouspet_name
+		     , pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		     , nextpet_UID, nextpet_name
+		from
+		(
+		    select lag(pet_UID, 1) over(order by pet_UID desc) as previouspet_UID
+		         , lag(pet_name, 1) over(order by pet_UID desc) as previouspet_name
+		         , pet_UID, fk_idx, pet_name
+                 , decode(pet_type, 'dog', '강아지'
+                    			  , 'cat', '고양이'
+                    			  , 'smallani', '소동물'
+                                			  , '기타') as pet_type
+		         , pet_birthday, pet_size, pet_weight
+	             , decode(pet_gender, '1', '수컷'
+                             			 , '암컷') as pet_gender
+		         , pet_neutral, medical_history, allergy, pet_profileimg
+		         , lead(pet_UID, 1) over(order by pet_UID desc) as nextpet_UID
+		         , lead(pet_name, 1) over(order by pet_UID desc) as nextpet_name
+		    from pet_info
+		    where pet_status = 1 and fk_idx = #{fk_idx}
+		) V
+		where pet_UID = #{pet_UID}
+	</select>
+	
+	
+	<!-- //===== 특정 반려동물관리 몸무게(Ajax) ===== -->
+	<resultMap type="java.util.HashMap" id="petweightMap">
+		<result property="PETWEIGHT_UID"  column="petweight_UID"  javaType="String" />
+		<result property="FK_PET_UID" 	  column="fk_pet_UID" 	  javaType="String" />
+		<result property="PETWEIGHT_PAST" column="petweight_past" javaType="String" />
+		<result property="PETWEIGHT_TARGETED" column="petweight_targeted" javaType="String" />
+		<result property="PETWEIGHT_DATE" column="petweight_date" javaType="String" />
+	</resultMap>
+	<select id="getWeight" parameterType="String" resultMap="petweightMap">
+		select petweight_UID, fk_pet_UID, petweight_past, nvl(petweight_targeted, ( select petweight_past
+																			        from        
+																			        (
+																			            select petweight_past
+																			            from petweight
+																			        ) V
+																			        where rownum = 1) ) as petweight_targeted
+        	 , to_char(petweight_date, 'yyyy-mm-dd') as petweight_date
+		from petweight 
+		where fk_pet_UID = #{pet_UID}
+		order by petweight_uid desc
+	</select>
+	
+	
+	<!-- // ***** Mybatis 에서 프로시저 호출해서 사용하기 ***** // #프로시저는 항상 좌중괄호, 우중괄호 -->
+	<insert id="addWeight" statementType="CALLABLE" parameterType="HashMap">
+		{ call PCD_PETWEIGHT_INSERT( #{PET_UID, mode=IN}
+								   , #{PETWEIGHT_PAST, mode=IN}
+								   , #{PETWEIGHT_TARGETED, mode=IN}
+								   , #{PETWEIGHT_DATE, mode=IN} )
+		}	
+	</insert> 
+	
+	<!-- 특정 반려동물케어 체중 페이지 완료 ==== -->
+	<update id="addWeightWithPet_info" parameterType="HashMap">
+		update pet_info set pet_weight = #{PETWEIGHT_PAST}
+		where pet_UID = #{PET_UID}
+	</update>
+	
+	
+	
+	<!-- //===== 특정 반려동물관리 진료기록(Ajax) ===== -->
+	<resultMap type="java.util.HashMap" id="petchartMap">
+		<result property="CHART_UID"  		column="chart_UID"        javaType="String" />
+		<result property="BIZ_NAME" 	  	column="biz_name" 	  	  javaType="String" />
+		<result property="RESERVATION_DATE" column="reservation_date" javaType="String" />
+	</resultMap>
+	<select id="getChart" parameterType="String" resultMap="petchartMap">
+		select chart_UID, biz_name, to_char(reservation_date, 'yyyy-mm-dd') as reservation_date
+		from chart
+		where fk_pet_UID = #{pet_UID}
+		order by chart_UID desc
+	</select>
+	
+
+	<!-- //===== 케어관리페이지 요청 ===== -->
+	<resultMap type="java.util.HashMap" id="petcareMap">
+		<result property="CARETYPE_UID"  	column="caretype_uid"   	javaType="String" />
+		<result property="CARETYPE_NAME"   	column="caretype_name" 		javaType="String" />
+		<result property="CARETYPE_INFO" 	column="caretype_info"		javaType="String" />
+		<result property="CARE_UID" 		column="care_uid" 			javaType="String" />
+		<result property="FK_PET_UID" 		column="fk_pet_uid" 		javaType="String" />
+		<result property="FK_CARETYPE_UID" 	column="fk_caretype_uid"	javaType="String" />
+		<result property="CARE_CONTENTS" 	column="care_contents" 		javaType="String" />
+		<result property="CARE_MEMO" 		column="care_memo" 			javaType="String" />
+		<result property="CARE_START" 		column="care_start" 		javaType="String" />
+		<result property="CARE_END" 		column="care_end" 			javaType="String" />
+		<result property="CARE_ALARM" 		column="care_alarm" 		javaType="String" />
+		<result property="CARE_DATE" 		column="care_date" 			javaType="String" />
+	</resultMap>
+	<select id="getPetcare" parameterType="String" resultMap="petcareMap">
+		select c.caretype_uid, c.caretype_name, c.caretype_info
+		     , P.care_uid, P.fk_pet_uid, P.fk_caretype_uid, P.care_contents, P.care_memo
+		     , P.care_start, P.care_end, P.care_alarm, P.care_date
+		from caretype C JOIN petcare P
+		on c.caretype_uid = P.fk_caretype_uid
+		where P.fk_pet_uid = #{pet_UID}
+		order by to_date(P.care_end, 'yyyy-mm-dd hh24:mi:ss') desc
+	</select>
+
+
+
+</mapper>

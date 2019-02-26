@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="excel">
+	<select id="selectDepositListForMember" parameterType="HashMap" resultType="com.final2.petopia.model.DepositVO">
+		select rownum as rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID
+		from
+			(
+			select deposit_UID, fk_idx, depositcoin, decode(deposit_status, 0, '사용완료', 1, '충전', 2, '차액환불', 3, '출금', -1, '입금대기') as deposit_status
+				, deposit_type, to_char(deposit_date, 'yyyy-mm-dd hh24:mi') as deposit_date, fk_payment_UID
+			from deposit
+			where fk_idx = #{fk_idx} and depositcoin != 0
+			order by deposit_UID desc
+		)
+	</select>
+	
+	<select id="selectChartListForMember" parameterType="HashMap" resultType="com.final2.petopia.model.ChartVO">
+           select reservation_date ,chart_UID
+             ,decode(chart_type,'0','약국','1','일반 진료','2','예방접종','3','수술','4','호텔링') as chart_type
+             ,totalpay,biz_name 
+          from chart 
+          where fk_idx = #{fk_idx}
+	</select>
+	
+	<insert id="insertExcelCare" parameterType="HashMap">
+	    insert into petcare(care_UID, fk_pet_UID, fk_caretype_UID, care_contents, care_memo, care_start, care_end, care_alarm, care_date)
+		select seq_petcare_UID.nextval, A.* from(
+		<foreach collection="excelContent" item="item" separator="UNION ALL ">
+	       select #{item.B} as fk_pet_UID, #{item.C} as fk_caretype_UID, #{item.D, jdbcType=VARCHAR} as care_contents
+	       		, #{item.E} as care_memo, #{item.F} as care_start, #{item.G} as care_end, #{item.H} as care_alarm,
+	            to_char(to_date(#{item.G}, 'yyyy-mm-dd hh24:mi') - #{item.H}*1/24/60, 'yyyy-mm-dd hh24:mi') as care_date
+	       from dual
+	    </foreach>) A
+  </insert>
+</mapper>

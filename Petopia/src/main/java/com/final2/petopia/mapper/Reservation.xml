@@ -1,0 +1,640 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reservation">
+	<!-- [190121] selectScheduleListByIdx_biz select절에 where 조건절 추가 -->
+	<select id="selectScheduleListByIdx_biz" parameterType="String" resultType="com.final2.petopia.model.ScheduleVO">
+		select schedule_UID, fk_idx_biz, to_char(schedule_date, 'yyyy-mm-dd hh24:mi') as schedule_date, schedule_status, to_char((schedule_date+30/(24*60)), 'yyyy-mm-dd hh24:mi') as endtime
+		from schedule
+		where schedule_date > sysdate and fk_idx_biz=#{idx_biz}
+		order by schedule_date
+	</select>
+	<select id="selectBizMemberVOByIdx_biz" parameterType="String" resultType="com.final2.petopia.model.Biz_MemberVO">
+		select idx as idx_biz, name, phone 
+		from member
+		where idx=#{idx_biz}
+	</select>
+	<!-- [190119]  -->
+	<!-- #로그인 회원 idx로 펫 리스트 select하기 -->
+	<select id="selectPetListByIdx" parameterType="int" resultType="com.final2.petopia.model.PetVO">
+		select pet_UID, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		from pet_info
+		where fk_idx=#{idx}
+	</select>
+	<!-- #pet_UID로 펫 1마리의 정보 select하기 -->
+	<select id="selectPetOneByPet_UID" parameterType="String" resultType="com.final2.petopia.model.PetVO">
+		select pet_UID, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		from pet_info
+		where pet_UID=#{pet_UID}
+	</select>
+	
+	<!-- [190120] -->
+	<!-- #예약VO로 예약테이블에 insert하기; 결제가 없는 예약 -->
+	<insert id="insertReservationByRvo" parameterType="com.final2.petopia.model.ReservationVO">
+		insert into reservation(reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate, reservation_DATE, reservation_status, reservation_type)
+		values(seq_reservation_UID.nextval, #{fk_idx}, #{fk_idx_biz}, #{fk_schedule_UID}, #{fk_pet_UID}, default, to_date(#{reservation_DATE}, 'yyyy-mm-dd hh24:mi'), 2, #{reservation_type})
+	</insert>
+	<!-- [190128] 파라미터 타입 변경, 값 변경 -->
+	<update id="updateScheduleStatusBySUID" parameterType="HashMap">
+		update schedule set schedule_status = #{status} where schedule_UID=#{fk_schedule_UID}
+	</update>
+	
+	<select id="selectReservation_Seq" resultType="String">
+		select seq_reservation_UID.nextval as seq
+		from dual
+	</select>
+	<!-- #예약VO로 예약테이블에 insert하기; 결제가 있는 예약 -->
+	<insert id="insertReservationSurgeryByRvo" parameterType="com.final2.petopia.model.ReservationVO">
+		insert into reservation(reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate, reservation_DATE, reservation_status, reservation_type)
+		values(#{reservation_UID}, #{fk_idx}, #{fk_idx_biz}, #{fk_schedule_UID}, #{fk_pet_UID}, default, to_date(#{reservation_DATE}, 'yyyy-mm-dd hh24:mi'), 1, #{reservation_type})
+	</insert>
+	
+	<!-- #회원번호로 예치금 잔액 가져오기 -->
+	<select id="selectSumDepositByIdx" parameterType="String" resultType="Integer">
+		select nvl(sum(depositcoin), 0) as n
+		from deposit
+		where fk_idx = #{idx} and deposit_status!=-1
+	</select>
+	<!-- #회원번호로 회원 포인트 가져오기 -->
+	<select id="selectPointByIdx" parameterType="String" resultType="Integer">
+		select point
+		from member
+		where idx = #{idx}
+	</select>
+	
+	<!-- [190130] rv_type 추가  -->
+	<resultMap type="HashMap" id="rmap_like_reservationVO">
+		<result property="reservation_UID" column="RESERVATION_UID" javaType="String"/>
+		<result property="fk_idx" column="FK_IDX" javaType="String"/>
+		<result property="fk_idx_biz" column="FK_IDX_BIZ" javaType="String"/>
+		<result property="fk_schedule_UID" column="FK_SCHEDULE_UID" javaType="String"/>
+		<result property="fk_pet_UID" column="FK_PET_UID" javaType="String"/>
+		<result property="bookingdate" column="BOOKINGDATE" javaType="String"/>
+		<result property="reservation_DATE" column="RESERVATION_DATE" javaType="String"/>
+		<result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+		<result property="rv_type" column="RV_TYPE" javaType="String"/>
+		<result property="reservation_type" column="RESERVATION_TYPE" javaType="String"/>
+		<result property="biz_name" column="BIZ_NAME" javaType="String"/>
+		<result property="phone" column="PHONE" javaType="String"/>
+		<result property="postcode" column="POSTCODE" javaType="String"/>
+		<result property="addr1" column="ADDR1" javaType="String"/>
+		<result property="addr2" column="ADDR2" javaType="String"/>
+		<result property="pet_name" column="PET_NAME" javaType="String"/>
+		<result property="pet_type" column="PET_TYPE" javaType="String"/>
+	</resultMap>
+	
+	<!-- #예약번호로 회원 예약내역 가져오기-->
+	<!-- [190130] rv_type 추가  -->
+	<select id="selectUserReservationOneByFkRUID" parameterType="String" resultMap="rmap_like_reservationVO">
+		select reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, to_char(bookingdate, 'yyyy-mm-dd hh24:mi') as bookingdate
+		    , to_char(reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, reservation_status
+		    , decode(reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as rv_type
+		    , reservation_type
+		    , biz_name, phone, postcode, addr1, addr2, pet_name, decode(pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+		from reservation join 
+		(
+		select pet_name, pet_type, biz_name, phone, postcode, addr1, addr2
+		from pet_info join
+		    (
+		    select name as biz_name, phone, postcode, addr1, addr2
+		    from member join biz_info
+		    on idx = idx_biz
+		    where idx_biz=(select fk_idx_biz from reservation where reservation_UID = #{fk_reservation_UID})
+		    ) V
+		on 1=1
+		where pet_UID = (select fk_pet_UID from reservation where reservation_UID = #{fk_reservation_UID})
+		) R
+		on 1=1
+		where reservation_UID = #{fk_reservation_UID}
+	</select>
+	
+	<!-- [190124] 결제테이블 시퀀스 채번하기 -->
+	<select id="selectPayment_Seq" resultType="int">
+		select seq_payment_UID.nextval as seq
+		from dual
+	</select>
+	<!-- #수술예약 시 예치금결제 후 결제테이블에 insert -->
+	<insert id="insertPaymentByPvo" parameterType="com.final2.petopia.model.PaymentVO">
+		insert into payment(payment_UID, fk_reservation_UID, payment_total, payment_point, payment_pay, payment_date, payment_status)
+		values(#{payment_UID}, #{fk_reservation_UID}, #{payment_total} , #{payment_point}, #{payment_pay}, sysdate, 1)
+	</insert>
+	<!-- #예치금 잔액에서 결제금액만큼 감한 내용을 예치금 테이블에 insert -->
+	<!-- [190213] deposit_status 3->0으로 변경 -->
+	<update id="insertDepositMinus" parameterType="HashMap">
+		insert into deposit(deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID)
+		values(seq_deposit_UID.nextval, #{fk_idx}, #{depositcoin}, 0, 'used', sysdate, #{payment_UID})
+	</update>
+	<!-- [190125] 포인트 set 변경 -->
+	<update id="updatePointMember" parameterType="HashMap">
+		update member set point=point+#{point} where idx=#{fk_idx}
+	</update>
+	<!-- #결제완료후 예약테이블의 예약상태 변경하기 -->
+	<update id="updateReservationStatusByFkRUID" parameterType="String">
+		update reservation set reservation_status = 2 where reservation_UID=#{fk_reservation_UID}
+	</update>
+	
+	
+	<select id="getTotalCountNoSearch" parameterType="int" resultType="int">
+		select count(*) as cnt
+		from reservation
+		where fk_idx = #{idx}
+	</select>
+	<!-- [190130] rv_type 추가 -->
+	<select id="selectUserReservationList" parameterType="HashMap" resultMap="rmap_like_reservationVO">
+		select rno, reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate
+			, reservation_DATE, reservation_status, rv_type, reservation_type
+			, biz_name, phone, postcode, addr1, addr2, pet_name, pet_type
+		from
+		(
+		select rownum as rno, reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate
+			, reservation_DATE, reservation_status, rv_type, reservation_type
+			, biz_name, phone, postcode, addr1, addr2, pet_name, pet_type
+		from
+			(
+			select A.reservation_UID, A.fk_idx, A.fk_idx_biz, A.fk_schedule_UID, A.fk_pet_UID, to_char(A.bookingdate, 'yyyy-mm-dd hh24:mi') as bookingdate
+						, to_char(A.reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, reservation_status
+						, decode(A.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as rv_type
+						, reservation_type
+						, B.biz_name, B.phone, B.postcode, B.addr1, B.addr2, C.pet_name, decode(C.pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+			from reservation A join view_biz_memberinfo B
+			on A.fk_idx_biz = B.idx_biz
+			join pet_info C
+			on A.fk_pet_UID = C.pet_UID
+			where A.fk_idx = #{idx}
+			order by A.reservation_UID desc
+			)
+		)
+		where rno between #{startRno} and #{endRno}
+	</select>
+	
+	<!-- [190125] 예치금 히스토리 목록에서 모두보기 -->
+	<select id="selectDepositListByIdxNoneType" parameterType="HashMap" resultType="com.final2.petopia.model.DepositVO">
+		select rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID
+		from
+		(
+		select rownum as rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID
+		from
+			(
+			select deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, to_char(deposit_date, 'yyyy-mm-dd hh24:mi') as deposit_date, fk_payment_UID
+			from deposit
+			where fk_idx = #{idx} and depositcoin != 0
+			order by deposit_UID desc
+			)
+		)
+		where rno between #{rno1} and #{rno2}
+	</select>
+	
+	<!-- [190126] 예치금 히스토리 목록에서 충전/사용목록 보기
+		[190213] deposit_type 비교를 배열타입으로 변경
+	-->
+	<select id="selectDepositListByIdx" parameterType="HashMap" resultType="com.final2.petopia.model.DepositVO">
+		select rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID
+		from
+		(
+		select rownum as rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID
+		from
+			(
+			select deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, to_char(deposit_date, 'yyyy-mm-dd hh24:mi') as deposit_date, fk_payment_UID
+			from deposit
+			where fk_idx = #{idx} 
+			and deposit_status in 
+			<foreach collection="typeArr" index="i" open="(" separator="," close=")">
+				${typeArr[i]}
+			</foreach>
+			and depositcoin != 0
+			order by deposit_UID desc
+			)
+		)
+		where rno between #{rno1} and #{rno2}
+	</select>
+	<!-- [190126] 예치금 히스토리 목록; 모든 건수 -->
+	<select id="selectDepositListTotalCountNoneType" parameterType="HashMap" resultType="int">
+		select count(*) from deposit where fk_idx=#{idx} and depositcoin != 0
+	</select>
+	<!-- [190126] 예치금 히스토리 목록; 충전/사용건수 -->
+	<select id="selectDepositListTotalCount" parameterType="HashMap" resultType="int">
+		select count(*) from deposit where fk_idx=#{idx} 
+		and deposit_status in 
+			<foreach collection="typeArr" index="i" open="(" separator="," close=")">
+				${typeArr[i]}
+			</foreach>
+		and depositcoin != 0
+	</select>
+	<!-- [190126] 최초 스케줄 생성 프로시저 -->
+	<insert id="insertScheduleFirst" statementType="CALLABLE" parameterType="String">
+		{call PCD_FIRSTADDSCHEDULE(#{idx_biz, mode=IN})}
+	</insert>
+	<!-- [190126] 병원회원의 스케줄 개수 가져오기 -->
+	<select id="selectScheduleCountByIdx_biz" parameterType="String" resultType="int">
+		select count(*) from schedule where fk_idx_biz = #{idx_biz}
+	</select>
+	
+	<resultMap type="HashMap" id="biz_scheduleMap">
+		<result property="schedule_UID" column="SCHEDULE_UID" javaType="String" />
+		<result property="reservation_UID" column="RESERVATION_UID" javaType="String" />
+		<result property="fk_idx_biz" column="FK_IDX_BIZ" javaType="String" />
+		<result property="reservation_DATE_YMD" column="RESERVATION_DATE_YMD" javaType="String" />
+		<result property="reservation_DATE_HM" column="RESERVATION_DATE_HM" javaType="String" />
+		<result property="reservation_type" column="RESERVATION_TYPE" javaType="String" />
+		<result property="reservation_status" column="RESERVATION_STATUS" javaType="String" />
+		<result property="schedule_status" column="SCHEDULE_STATUS" javaType="String"/>
+		<result property="name" column="NAME" javaType="String" />
+		<result property="fk_idx" column="IDX" javaType="String" />
+		<result property="fk_pet_UID" column="FK_PET_UID" javaType="String" />
+		<result property="pet_name" column="PET_NAME" javaType="String" />
+		<result property="pet_type" column="PET_TYPE" javaType="String" />
+	</resultMap>
+	<!-- [190128] 캘린더에서 이벤트 클릭 시 예약 정보 가져오기 -->
+	<!-- [190129] reservation_status 비교절 추가 -->
+	<select id="selectScheduleOneByScheduleUID" parameterType="String" resultMap="biz_scheduleMap">
+		SELECT S.SCHEDULE_UID, RESERVATION_UID, R.FK_IDX_BIZ ,TO_CHAR(RESERVATION_DATE, 'yyyy-MM-dd') AS RESERVATION_DATE_YMD
+				, TO_CHAR(RESERVATION_DATE, 'HH24:MI') AS RESERVATION_DATE_HM, RESERVATION_TYPE, RESERVATION_STATUS, SCHEDULE_STATUS
+		        ,M.NAME, M.IDX, R.FK_PET_UID, P.PET_NAME, P.PET_TYPE
+		FROM SCHEDULE S JOIN RESERVATION R
+		ON S.SCHEDULE_UID=R.FK_SCHEDULE_UID
+		JOIN MEMBER M
+		ON R.FK_IDX = M.IDX
+		JOIN PET_INFO P
+		ON R.FK_PET_UID=P.PET_UID
+		WHERE S.SCHEDULE_UID=#{SCHEDULE_UID} AND R.RESERVATION_STATUS != 4
+	</select>
+	<!-- [190128] 기업회원 예약 일정 수정하기 -->
+	<!-- 1. 예약테이블 일치값 찾기  -->
+	<!-- [190129] reservation_status 비교절 추가 -->
+	<select id="selectReservationByDate" parameterType="HashMap" resultType="int">
+		select count(*)
+		from reservation
+		where reservation_date = to_date(#{reservation_DATE}, 'yyyy-mm-dd hh24:mi')
+		and fk_idx_biz = #{fk_idx_biz}
+		and reservation_status in (1, 2)
+	</select>
+	<!-- 2. 스케줄 테이블에서 날짜값과 일치하는 값 가져오기  -->
+	<select id="selectScheduleOneByDate" parameterType="HashMap" resultType="String">	
+		select schedule_UID
+		from schedule
+		where fk_idx_biz = #{fk_idx_biz} and schedule_DATE = to_date(#{reservation_DATE}, 'yyyy-mm-dd hh24:mi')
+		and schedule_status=0
+	</select>
+	<!-- 기존 예약건의 상태를 4(취소)로 변경 -->
+	<update id="updateReservationStatusTo4" parameterType="HashMap">
+		update reservation set reservation_status=4 where reservation_UID=#{reservation_UID}
+	</update>
+	<!-- 수술타입 예약인 경우 결제테이블의 예약 UID를 새로운 UID로 변경 -->
+	<update id="updatePaymentReservationUID" parameterType="HashMap">
+		update payment set fk_reservation_UID = #{n_reservation_UID} where fk_reservation_UID = #{reservation_UID}
+	</update>
+	<!-- 스케줄 테이블 시퀀스 채번하기 -->
+	<select id="selectScheduleSeq" resultType="String">
+		select seq_schedule_UID.nextval as seq from dual
+	</select>
+	<!-- 스케줄 테이블에 새 스케줄 입력하기 -->
+	<insert id="insertBizScheduleOne" parameterType="com.final2.petopia.model.ScheduleVO">
+		insert into schedule(schedule_UID, fk_idx_biz, schedule_DATE, schedule_status) values(#{schedule_UID}, #{fk_idx_biz}, to_date(#{schedule_DATE}, 'yyyy-mm-dd hh24:mi'), default)
+	</insert>
+	
+	<!-- [190129] -->
+	<!-- #기업회원; 예약 일정 취소하기 - 수술상담 및 결제완료의 경우 -->
+	<!-- 1) payment테이블에서 실제 결제한 포인트와 예치금금액 select -->
+	<select id="selectPayPointAndPayCoin" parameterType="String" resultType="com.final2.petopia.model.PaymentVO">
+		select payment_point, payment_pay from payment where fk_reservation_UID=#{reservation_UID}
+	</select>
+	<!-- 2) payment 테이블의 status 3(환불)로 변경 -->
+	<update id="updatePaymentStatusTo3ByFK_rvUID" parameterType="String">
+		update payment set payment_status=3 where fk_reservation_UID=#{reservation_UID}
+	</update>
+	<!-- 3) 예치금 테이블에 충전 또는 환불받은 값 인서트하기
+	[190207] payment_UID 수정 -->
+	<insert id="insertDepositPlus" parameterType="HashMap">
+		insert into deposit(deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID)
+		values(seq_deposit_UID.nextval, #{fk_idx}, to_number(#{depositcoin}), #{deposit_status}, #{deposit_type}, sysdate, #{payment_UID})
+	</insert>
+	
+	<!-- #notification 테이블에 insert -->
+	<insert id="insertNoteForReservation" parameterType="HashMap">
+		insert into notification(not_UID, fk_idx, not_type, not_message, not_date)
+		values(seq_notification_UID.nextval, #{fk_idx}, 2, #{not_message}, sysdate)
+	</insert>
+	
+	<!-- [190130] 예약 상세 페이지에 정보 resultMap  -->
+	<!-- [190131] biz_name -> name 변경 -->
+	<resultMap type="HashMap" id="rmap_reservationDetail">
+		<result property="reservation_UID" column="RESERVATION_UID" javaType="String"/>
+		<result property="fk_idx" column="FK_IDX" javaType="String"/>
+		<result property="fk_idx_biz" column="FK_IDX_BIZ" javaType="String"/>
+		<result property="fk_schedule_UID" column="FK_SCHEDULE_UID" javaType="String"/>
+		<result property="fk_pet_UID" column="FK_PET_UID" javaType="String"/>
+		<result property="bookingdate" column="BOOKINGDATE" javaType="String"/>
+		<result property="reservation_DATE" column="RESERVATION_DATE" javaType="String"/>
+		<result property="reservation_status" column="RESERVATION_STATUS" javaType="String"/>
+		<result property="rv_type" column="RV_TYPE" javaType="String"/>
+		<result property="reservation_type" column="RESERVATION_TYPE" javaType="String"/>
+		<result property="name" column="NAME" javaType="String"/>
+		<result property="phone" column="PHONE" javaType="String"/>
+		<result property="postcode" column="POSTCODE" javaType="String"/>
+		<result property="addr1" column="ADDR1" javaType="String"/>
+		<result property="addr2" column="ADDR2" javaType="String"/>
+		<result property="pet_name" column="PET_NAME" javaType="String"/>
+		<result property="pet_type" column="PET_TYPE" javaType="String"/>
+		<result property="payment_pay" column="PAYMENT_PAY" javaType="String"/>
+		<result property="payment_point" column="PAYMENT_POINT" javaType="String"/>
+		<result property="payment_total" column="PAYMENT_TOTAL" javaType="String"/>
+		<result property="payment_date" column="PAYMENT_DATE" javaType="String"/>
+	</resultMap>
+	
+	<!-- [190131] 예약 상세 페이지에 정보 select 하기 (member) -->
+	<select id="selectRvDetailByPUIDForMember" parameterType="String" resultMap="rmap_reservationDetail">
+		select r.reservation_UID, r.fk_idx, r.fk_idx_biz, r.fk_schedule_UID, r.fk_pet_UID, to_char(r.bookingdate, 'yyyy-mm-dd hh24:mi') as bookingdate
+        , to_char(r.reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, r.reservation_status
+        , decode(r.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as rv_type
+		, r.reservation_type
+		, m.name, m.phone, postcode, addr1, addr2, pet_name, decode(pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+        , payment_pay*-1 as payment_pay, payment_point, payment_total, to_char(payment_date, 'yyyy-mm-dd hh24:mi') as payment_date
+		from deposit d join payment p
+		on d.fk_payment_UID = p.payment_UID
+		join reservation r
+		on r.reservation_UID = p.fk_reservation_UID
+		join member m
+		on m.idx=r.fk_idx_biz
+		join pet_info i
+		on i.pet_UID = r.fk_pet_UID
+		join biz_info b
+		on b.idx_biz = r.fk_idx_biz
+		where d.depositcoin!=0 and p.payment_UID=#{payment_UID}
+	</select>
+	
+	<!-- [190131] 예약 상세 페이지에 정보 select 하기 (biz)
+		[190211] idx_biz 추가, chart 추가
+	-->
+	<select id="selectRvDetailForBiz" parameterType="HashMap" resultMap="rmap_reservationDetail">
+		select r.reservation_UID, r.fk_idx, r.fk_idx_biz, r.fk_schedule_UID, r.fk_pet_UID, to_char(r.bookingdate, 'yyyy-mm-dd hh24:mi') as bookingdate
+        , to_char(r.reservation_DATE, 'yyyy-mm-dd hh24:mi') as reservation_DATE, r.reservation_status
+        , decode(r.reservation_type, 1, '외래진료', 2, '예방접종', 3, '수술상담', 4, '호텔링') as rv_type
+		, r.reservation_type
+		, m.name, m.phone, pet_name, decode(pet_type, 'dog', '강아지', 'cat', '고양이', 'smallani', '소동물', 'etc', '기타종류') as pet_type
+        , addpay+p.payment_pay*-1 as payment_pay, p.payment_point, totalpay as payment_total, to_char(payment_date, 'yyyy-mm-dd hh24:mi') as payment_date
+		from deposit d join payment p
+		on d.fk_payment_UID = p.payment_UID
+		join reservation r
+		on r.reservation_UID = p.fk_reservation_UID
+		join member m
+		on m.idx=r.fk_idx
+		join pet_info i
+		on i.pet_UID = r.fk_pet_UID
+		join chart c
+		on r.reservation_UID = C.fk_reservation_UID
+		where p.payment_UID=#{payment_UID} and d.fk_idx=#{idx_biz}
+	</select>
+	
+	
+	
+	<!-- #예약VO로 예약테이블에 insert하기; 결제가 있는 예약 -->
+	<insert id="insertReservationSurgeryByRvo2" parameterType="com.final2.petopia.model.ReservationVO">
+		insert into reservation(reservation_UID, fk_idx, fk_idx_biz, fk_schedule_UID, fk_pet_UID, bookingdate, reservation_DATE, reservation_status, reservation_type)
+		values(seq_reservation_UID.nextval, #{fk_idx}, #{fk_idx_biz}, #{fk_schedule_UID}, #{fk_pet_UID}, default, to_date(#{reservation_DATE}, 'yyyy-mm-dd hh24:mi'), 2, #{reservation_type})
+		<selectKey keyProperty="reservation_UID" resultType="String" order="AFTER">
+			select seq_reservation_UID.currval from dual
+		</selectKey>
+	</insert>
+	
+	
+	<!-- [190203] -->
+	<select id="selectPaymentTotalCountWithSearch" parameterType="HashMap" resultType="int">
+		select count(*)
+		from payment P join reservation R
+		on fk_reservation_UID = reservation_UID
+		join member M
+		on R.fk_idx = idx
+		join pet_info E
+		on E.pet_UID = R.fk_pet_UID
+		join biz_info B
+		on R.fk_idx_biz = B.idx_biz
+		join member T
+		on T.idx = B.idx_biz
+		where ${colname} like '%'||#{search}||'%'
+	</select>
+	
+	<select id="selectPaymentTotalCountNoSearch" parameterType="HashMap" resultType="int">
+		select count(*)
+		from payment P join reservation R
+		on fk_reservation_UID = reservation_UID
+		join member M
+		on R.fk_idx = idx
+		join pet_info E
+		on E.pet_UID = R.fk_pet_UID
+		join biz_info B
+		on R.fk_idx_biz = B.idx_biz
+		join member T
+		on T.idx = B.idx_biz
+	</select>
+	
+	<resultMap type="HashMap" id="rmap_adminPaymentRvList">
+		<result property="rno" column="rno" javaType="String"/>
+		<result property="payment_UID" column="payment_UID" javaType="String"/>
+		<result property="reservation_UID" column="reservation_UID" javaType="String"/>
+		<result property="payment_total" column="payment_total" javaType="String"/>
+		<result property="payment_point" column="payment_point" javaType="String"/>
+		<result property="payment_pay" column="payment_pay" javaType="String"/>
+		<result property="payment_date" column="payment_date" javaType="String"/>
+		<result property="payment_status" column="payment_status" javaType="String"/>
+		<result property="bookingdate" column="bookingdate" javaType="String"/>
+		<result property="reservation_date" column="reservation_date" javaType="String"/>
+		<result property="reservation_status" column="reservation_status" javaType="String"/>
+		<result property="reservation_type" column="reservation_type" javaType="String"/>
+		<result property="idx" column="idx" javaType="String"/>
+		<result property="name" column="name" javaType="String"/>
+		<result property="phone" column="phone" javaType="String"/>
+		<result property="idx_biz" column="idx_biz" javaType="String"/>
+		<result property="biz_name" column="biz_name" javaType="String"/>
+		<result property="biz_phone" column="biz_phone" javaType="String"/>
+		<result property="pet_name" column="pet_name" javaType="String"/>
+		<result property="pet_type" column="pet_type" javaType="String"/>
+	</resultMap>
+	
+	<select id="selectPaymentRvListForAdmin" parameterType="HashMap" resultMap="rmap_adminPaymentRvList">
+		select rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+		        , payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+		        , idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+		from
+		(
+		select rownum as rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+	        , payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+	        , idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+	    from
+			(
+			select payment_UID, reservation_UID, payment_total, payment_point, payment_pay*-1 as payment_pay, to_char(payment_date, 'yyyy-mm-dd hh24:mi:ss') as payment_date
+		        , payment_status, to_char(bookingdate, 'yyyy-mm-dd hh24:mi:ss') as bookingdate
+		        , to_char(reservation_date, 'yyyy-mm-dd hh24:mi:ss') as reservation_date, reservation_status, reservation_type
+		        , M.idx, M.name as name, M.phone as phone, B.idx_biz, T.name as biz_name, T.phone as biz_phone, E.pet_name, E.pet_type
+			from payment P join reservation R
+			on fk_reservation_UID = reservation_UID
+			join member M
+			on R.fk_idx = idx
+			join pet_info E
+			on E.pet_UID = R.fk_pet_UID
+			join biz_info B
+			on R.fk_idx_biz = B.idx_biz
+			join member T
+			on T.idx = B.idx_biz
+			where status = 1
+			<if test="search != '' and search != null and search !='null' ">
+			and ${colname} like '%'||#{search}||'%'
+			</if>
+			order by payment_UID desc
+			) V
+		) N
+		where rno between #{startRno} and #{endRno}
+		order by rno asc
+	</select>
+	
+	<!-- [190204] -->
+	<!-- [190206] 수정; 비교식 between으로 변경 후 CDATA 삭제, where절 비교계산식 변경  -->
+	<select id="selectAdminPaymentRvListAll" resultMap="rmap_adminPaymentRvList">
+		select rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+       		 	, payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+        		, idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+		from
+		(
+		select rownum as rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+		    , payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+		    , idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+		from
+		    (
+		    select payment_UID, reservation_UID, payment_total, payment_point, payment_pay*-1 as payment_pay, to_char(payment_date, 'yyyy-mm-dd hh24:mi:ss') as payment_date
+		        , payment_status, to_char(bookingdate, 'yyyy-mm-dd hh24:mi:ss') as bookingdate
+		        , to_char(reservation_date, 'yyyy-mm-dd hh24:mi:ss') as reservation_date, reservation_status, reservation_type
+		        , M.idx, M.name as name, M.phone as phone, B.idx_biz, T.name as biz_name, T.phone as biz_phone, E.pet_name, E.pet_type
+		    from payment P join reservation R
+		    on fk_reservation_UID = reservation_UID
+		    join member M
+		    on R.fk_idx = idx
+		    join pet_info E
+		    on E.pet_UID = R.fk_pet_UID
+		    join biz_info B
+		    on R.fk_idx_biz = B.idx_biz
+		    join member T
+		    on T.idx = B.idx_biz
+		    order by payment_UID desc
+		    ) V
+		) N
+		where rno between 1 and 20
+		order by rno asc
+	</select>
+	
+	<select id="selectInfiniteScrollDownPaymentRvList" resultMap="rmap_adminPaymentRvList" parameterType="int">
+		select rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+       		 	, payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+        		, idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+		from
+		(
+		select rownum as rno, payment_UID, reservation_UID, payment_total, payment_point, payment_pay, payment_date
+		    , payment_status, bookingdate, reservation_date, reservation_status, reservation_type
+		    , idx, name, phone, idx_biz, biz_name, biz_phone, pet_name, pet_type
+		from
+		    (
+		    select payment_UID, reservation_UID, payment_total, payment_point, payment_pay*-1 as payment_pay, to_char(payment_date, 'yyyy-mm-dd hh24:mi:ss') as payment_date
+		        , payment_status, to_char(bookingdate, 'yyyy-mm-dd hh24:mi:ss') as bookingdate
+		        , to_char(reservation_date, 'yyyy-mm-dd hh24:mi:ss') as reservation_date, reservation_status, reservation_type
+		        , M.idx, M.name as name, M.phone as phone, B.idx_biz, T.name as biz_name, T.phone as biz_phone, E.pet_name, E.pet_type
+		    from payment P join reservation R
+		    on fk_reservation_UID = reservation_UID
+		    join member M
+		    on R.fk_idx = idx
+		    join pet_info E
+		    on E.pet_UID = R.fk_pet_UID
+		    join biz_info B
+		    on R.fk_idx_biz = B.idx_biz
+		    join member T
+		    on T.idx = B.idx_biz
+		    order by payment_UID desc
+		    ) V
+		) N
+		where rno between #{rnoToStart}+1 and #{rnoToStart}+5
+		order by rno asc
+	</select>
+	<!-- 190206 끝 -->
+	
+	<!-- [190207] -->
+	<!-- #예약번호로 ChartVO 가져오기 -->
+	<select id="selectChartVOByFk_RUID" parameterType="String" resultType="com.final2.petopia.model.ChartVO">
+		select chart_UID, fk_idx, chart_type, biz_name, doc_name, payment_pay, payment_point, addpay, totalpay, fk_reservation_UID
+		from chart
+		where fk_reservation_UID = #{fk_reservation_UID}
+	</select>
+	
+	<!-- #정산 완료 후 payment status 0으로 변경하기 -->
+	<update id="updatePaymentStatusTo0" parameterType="HashMap">
+		update payment set payment_status = 0 where payment_UID = #{payment_UID}
+	</update>
+	
+	<!-- [190211] -->
+	<!-- #무통장입금 정보 조회하기 -->
+	<resultMap type="HashMap" id="rmap_direct_deposit">
+		<result property="deposit_account" column="deposit_account" javaType="String"/>
+		<result property="deposit_date" column="deposit_date" javaType="String"/>
+		<result property="depositcoin" column="depositcoin" javaType="String"/>
+	</resultMap>
+	<select id="selectDepositDirectAccount" parameterType="String" resultMap="rmap_direct_deposit">
+		select deposit_type as deposit_account, to_char(deposit_date+3, 'yyyy-mm-dd hh24:mi') as deposit_date, depositcoin
+		from deposit
+		where deposit_UID = #{deposit_UID}
+	</select>
+	
+	<!-- #관리자 예치금 히스토리 목록에서 모두보기 -->
+	<select id="selectDepositListByIdxNoneTypeForAdmin" parameterType="HashMap" resultType="com.final2.petopia.model.DepositVO">
+		select rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID, membertype
+		from
+		(
+		select rownum as rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID, membertype
+		from
+			(
+			select deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, to_char(deposit_date, 'yyyy-mm-dd hh24:mi') as deposit_date, fk_payment_UID, membertype
+			from deposit join member
+			on fk_idx=idx
+			where depositcoin != 0
+			order by deposit_UID desc
+			)
+		)
+		where rno between #{rno1} and #{rno2}
+	</select>
+	
+	<!-- #관리자 예치금 히스토리 목록에서 충전/사용목록 보기
+		[190213] deposit_type 비교를 배열타입으로 변경
+	-->
+	<select id="selectDepositListByIdxForAdmin" parameterType="HashMap" resultType="com.final2.petopia.model.DepositVO">
+		select rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID, membertype
+		from
+		(
+		select rownum as rno, deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, deposit_date, fk_payment_UID, membertype
+		from
+			(
+			select deposit_UID, fk_idx, depositcoin, deposit_status, deposit_type, to_char(deposit_date, 'yyyy-mm-dd hh24:mi') as deposit_date, fk_payment_UID, membertype
+			from deposit join member
+			on fk_idx=idx
+			where deposit_status in 
+			<foreach collection="typeArr" index="i" open="(" separator="," close=")">
+				${typeArr[i]}
+			</foreach>
+			and depositcoin != 0
+			order by deposit_UID desc
+			)
+		)
+		where rno between #{rno1} and #{rno2}
+	</select>
+	<!-- #관리자 예치금 히스토리 목록; 모든 건수 -->
+	<select id="selectDepositListTotalCountNoneTypeForAdmin" parameterType="HashMap" resultType="int">
+		select count(*) from deposit where depositcoin != 0
+	</select>
+	<!-- #관리자 예치금 히스토리 목록; 충전/사용건수 -->
+	<select id="selectDepositListTotalCountForAdmin" parameterType="HashMap" resultType="int">
+		select count(*) from deposit where depositcoin != 0
+		and deposit_status in 
+			<foreach collection="typeArr" index="i" open="(" separator="," close=")">
+				${typeArr[i]}
+			</foreach>
+	</select>
+	
+	<!-- #DUID로 무통장입금건 status 변경하기 -->
+	<update id="updateDepositStatusByDUID" parameterType="String">
+		update deposit set deposit_status=1 where deposit_UID=#{deposit_UID}
+	</update>
+</mapper>
