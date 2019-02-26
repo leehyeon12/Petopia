@@ -91,7 +91,6 @@
    
 </style>
 
-<%-- [19-01-24. 수정 시작_hyunjae] --%>
 <script type="text/javascript">
 
    $(document).ready(function() {
@@ -122,7 +121,7 @@
                                     
                      html += "<div class=\"col-sm-3 pet-box\">"
                           + "   <div class=\"pet-img-box\">"
-                          + "      <img src=\"resources/img/care/" + entry.PET_PROFILEIMG + "\">"
+                          + "      <img src=\"resources/img/care/profiles/" + entry.PET_PROFILEIMG + "\">"
                           + "   </div>"
                           + "   <div>" + entry.PET_NAME + "</div>"
                           + "   <div>"
@@ -173,15 +172,12 @@
    
    <div class="row">
       
-      <!-- <div class="col-sm-12"> 시작 -->
-      <!-- n번째 반려동물 -->
+      <!-- n번째 반려동물 시작 -->
       <div id="displayPetList"  class="col-sm-12">
          <input type="hidden" id="fk_idx" />         
-         
-      <!-- <div class="col-sm-12"> 끝 -->   
-      </div>
+      </div> 
+      <!-- n번째 반려동물 시작 끝 --> 
 
    </div>
-   <%-- [19-01-24. 수정 끝_hyunjae] --%>
    
 </div>

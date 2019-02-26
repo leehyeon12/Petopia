@@ -171,7 +171,7 @@
 	                      
 	                     html += "<div align='center' class='pet-box'>"
 	                     	   + "	<span class='pointer changepet petname' onclick='javascript:location.href=\"careCalendar.pet?pet_UID="+ entry.PET_UID +"\"'>" + entry.PET_NAME + "</span>"
-	                     	   + "	<div class='img' style='display: block; text-align: left;'><span class='pointer changepet petname' onclick='javascript:location.href=\"careCalendar.pet?pet_UID="+ entry.PET_UID +"\"'><img src='resources/img/care/" + entry.PET_PROFILEIMG + "' /></span></div>"
+	                     	   + "	<div class='img' style='display: block; text-align: left;'><span class='pointer changepet petname' onclick='javascript:location.href=\"careCalendar.pet?pet_UID="+ entry.PET_UID +"\"'><img src='resources/img/care/profiles/" + entry.PET_PROFILEIMG + "' /></span></div>"
 	                     	   + "</div>";
 	                  	                  
 	                  });

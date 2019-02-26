@@ -4,7 +4,6 @@
 <mapper namespace="care">
 
 
-	<!-- [19-01-24. 수정 시작_hyunjae] -->
 	<!-- //===== 반려동물 리스트 ===== -->
 	<resultMap type="java.util.HashMap" id="getPet_infoListMap"> 
 		<result property="PET_UID" 	       column="pet_UID" 		javaType="int" />
@@ -33,13 +32,19 @@
 		      pet_status in('1','2')
 		order by pet_UID desc
 	</select>
-	<!-- [19-01-24. 수정 끝_hyunjae] -->
 
 
 	<!-- //===== 반려동물 등록 ===== -->
 	<insert id="insertPet_info" parameterType="com.final2.petopia.model.PetVO">
+		<if test='pet_profileimg.equals("null")'>
+		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy)
+		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR})			
+		</if>
+		
+		<if test='!pet_profileimg.equals("null")'>
 		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg)
-		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR}, #{pet_profileimg, jdbcType=VARCHAR})
+		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR}, #{pet_profileimg, jdbcType=VARCHAR})			
+		</if>	
 	</insert>
 	
 	

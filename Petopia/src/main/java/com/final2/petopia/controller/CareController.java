@@ -1,5 +1,6 @@
 package com.final2.petopia.controller;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,7 +17,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
+import com.final2.petopia.common.FileManager;
 import com.final2.petopia.model.CareVO;
 import com.final2.petopia.model.MemberVO;
 import com.final2.petopia.model.PetVO;
@@ -29,6 +33,9 @@ public class CareController {
 
 	@Autowired
 	private InterCareService service;
+	
+	@Autowired
+	private FileManager fileManager;
 	
 	@Autowired
 	private InterMemberService member_service;
@@ -50,7 +57,6 @@ public class CareController {
 		
 		return "care/petList.tiles2";
 	}
-	
 	//===== 반려동물 리스트 가져오기(Ajax) =====
 	@RequestMapping(value="/getPet.pet", method={RequestMethod.GET})
 	@ResponseBody
@@ -64,7 +70,9 @@ public class CareController {
 		
 		if(list != null) {
 			for(HashMap<String,String> datamap : list) {
+				
 				HashMap<String, Object> submap = new HashMap<String, Object>(); 
+				
 				submap.put("PET_UID", datamap.get("PET_UID"));
 				submap.put("FK_IDX", datamap.get("FK_IDX"));
 				submap.put("PET_NAME", datamap.get("PET_NAME"));
@@ -92,10 +100,35 @@ public class CareController {
 		
 		return "care/petRegister.tiles2";
 	}
+	
 	//===== 반려동물 등록 페이지 완료 =====
 	@RequestMapping(value="/petRegisterEnd.pet", method={RequestMethod.POST})
-	public String registerEnd(PetVO pvo, HttpServletRequest req) {
+	public String registerEnd(PetVO pvo, MultipartHttpServletRequest req) {
 	
+		MultipartFile attach = pvo.getAttach();
+		
+		if(!attach.isEmpty()) {
+			
+			HttpSession session = req.getSession();
+			String root = session.getServletContext().getRealPath("/");
+			String path = root + "resources" + File.separator + "img"+File.separator + "care" + File.separator + "profiles";
+			
+			String newFileName = "";
+			byte[] bytes = null;
+			
+			try {
+				
+				bytes = attach.getBytes();
+				newFileName = fileManager.doFileUpload(bytes, attach.getOriginalFilename() , path);
+
+				pvo.setPet_profileimg(newFileName);
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+		
 		int n = service.insertPet_info(pvo);
 
 		String msg = "";

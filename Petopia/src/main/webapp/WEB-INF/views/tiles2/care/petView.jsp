@@ -299,7 +299,7 @@
                </ul>
             </div>
             <div class="pointer in col-sm-3" onclick=window.open("careCalendar.pet?pet_UID=${pet_UID}","_self")>
-               <img src="resources/img/care/${petInfo.PET_PROFILEIMG}" class="profileimg">   
+               <img src="resources/img/care/profiles/${petInfo.PET_PROFILEIMG}" class="profileimg">   
                <ul style="list-style-type: none;">
                   <li>${petInfo.PET_NAME}</li>
                   <li>${petInfo.PET_BIRTHDAY}</li>

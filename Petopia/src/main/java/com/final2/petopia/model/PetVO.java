@@ -1,6 +1,7 @@
 package com.final2.petopia.model;
 
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 
 @Repository
 public class PetVO {
@@ -18,6 +19,8 @@ public class PetVO {
 	private String allergy;			// 알러지내역
 	private String pet_profileimg;	// 반려동물사진
 	private String pet_status;		// 반려동물상태
+	
+	private MultipartFile attach;
 	
 	public PetVO() {}
 	
@@ -139,6 +142,14 @@ public class PetVO {
 		this.pet_status = pet_status;
 	}
 	
+	public MultipartFile getAttach() {
+		return attach;
+	}
+
+	public void setAttach(MultipartFile attach) {
+		this.attach = attach;
+	}
+
 	public String getShowPet_type(){
 		if(pet_type.equals("cat")) {
 			pet_type="고양이";

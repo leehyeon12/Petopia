@@ -532,17 +532,11 @@ pet_UID          NUMBER        NOT NULL                     -- 반려동물코�
 ,pet_birthday    VARCHAR2(100) NULL                         -- 반려동물생일  
 ,pet_size        VARCHAR2(1)   NOT NULL                     -- 사이즈 L/M/S
 ,pet_weight      NUMBER        NOT NULL                     -- 몸무게  
-/*	
-    [19-01-22] from NULL to NOT NULL -->   
-    ,pet_size        VARCHAR2(2)   NULL
-    ,pet_weight      NUMBER        NULL
-*/    
 ,pet_gender      VARCHAR2(1)   NULL                         -- 성별 1 남 2 여
 ,pet_neutral     VARCHAR2(1)   NULL                         -- 중성화여부  0 안함 / 1 함 / 2 모름
 ,medical_history CLOB          NULL                         -- 과거병력기재
 ,allergy         CLOB          NULL                         -- 알러지내역
 ,pet_profileimg  VARCHAR2(255) NULL                         -- 반려동물프로필사진
-/*	[19-01-22] 반려동물상태 컬럼 추가 */
 ,pet_status      VARCHAR2(1)   DEFAULT 1 NOT NULL           -- 반려동물상태 0 무지개다리 / 1 생존 / 2 입원
 ,CONSTRAINT PK_pet_info PRIMARY KEY (pet_UID)               -- 반려동물정보 기본키
 ,CONSTRAINT FK_member_TO_pet_info FOREIGN KEY (fk_idx)      -- 회원 -> 반려동물정보
@@ -550,11 +544,6 @@ pet_UID          NUMBER        NOT NULL                     -- 반려동물코�
 ,CONSTRAINT ck_petinfo_gender check(pet_gender in(1,2))     -- 반려동물성별 체크제약
 ,CONSTRAINT ck_petinfo_neutral check(pet_neutral in(0,1,2)) -- 중성화여부 체크제약	 
 );
-/*	
-    [19-01-22] 반려동물상태 컬럼 추가 
-    alter table pet_info
-    add pet_status VARCHAR2(1) DEFAULT 1 NOT NULL;
-*/
 
 -- drop sequence seq_pet_info_UID;
 create sequence seq_pet_info_UID 

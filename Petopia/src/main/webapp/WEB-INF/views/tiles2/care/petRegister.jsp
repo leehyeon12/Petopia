@@ -1,6 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
     pageEncoding="UTF-8"%>
+    
 <style type="text/css">
+
    form {
       margin: 0 auto;
    }
@@ -154,7 +156,7 @@
          </div>
 
          <div class="col-sm-12">
-            <form name="registerFrm">
+            <form name="registerFrm" enctype="multipart/form-data">
                <input type="hidden" name="fk_idx" value="${loginuser.idx}" />
             
                <div class="col-sm-offset-2 preview-image" style="margin-bottom: 20px;">
@@ -162,7 +164,7 @@
                      <div class="col-sm-3 m-10">
                         <div class="profile" style="background-color: #d9d9d9; height: 150px; border-radius: 100%;" align="center">
                            <label for="input-file">프로필</label> 
-                           <input type="file" id="input-file" class="upload-hidden must" name="pet_profileimg" />
+                           <input type="file" id="input-file" class="upload-hidden must" name="attach" />
                         </div>
                      </div>
                      <div class="col-sm-9" style="margin-top:20px;">
