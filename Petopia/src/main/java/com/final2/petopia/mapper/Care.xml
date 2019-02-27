@@ -24,9 +24,12 @@
 		     , decode(pet_type, 'dog', '강아지'
 		                      , 'cat', '고양이'
 		                      , 'smallani', '소동물'
-		                                  , '기타') as pet_type, pet_birthday, pet_size, pet_weight
+		                                  , '기타') as pet_type
+		     , pet_birthday, pet_size, pet_weight
 		     , decode(pet_gender, '1', '수컷'
-		                             , '암컷') as pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		                             , '암컷') as pet_gender
+		     , pet_neutral, medical_history, allergy
+		     , nvl(pet_profileimg, 'noimg.png') as pet_profileimg
 		from pet_info
 		where fk_idx = #{fk_idx} and
 		      pet_status in('1','2')
@@ -36,19 +39,13 @@
 
 	<!-- //===== 반려동물 등록 ===== -->
 	<insert id="insertPet_info" parameterType="com.final2.petopia.model.PetVO">
-		<if test='pet_profileimg.equals("null")'>
-		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy)
-		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR})			
-		</if>
-		
-		<if test='!pet_profileimg.equals("null")'>
-		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg)
-		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}, #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR}, #{pet_profileimg, jdbcType=VARCHAR})			
-		</if>	
+		insert into pet_info(pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight
+						   , pet_gender, pet_neutral, medical_history, allergy, pet_profileimg)
+		values(seq_pet_info_UID.nextval, #{fk_idx}, #{pet_name}, #{pet_type}, #{pet_birthday, jdbcType=VARCHAR}, #{pet_size, jdbcType=VARCHAR}, #{pet_weight, jdbcType=INTEGER}
+			 , #{pet_gender, jdbcType=INTEGER}, #{pet_neutral, jdbcType=INTEGER}, #{medical_history, jdbcType=VARCHAR}, #{allergy, jdbcType=VARCHAR}, #{pet_profileimg, jdbcType=VARCHAR})			
 	</insert>
 	
-	
-	<!-- [19-01-25. 수정 시작_hyunjae] -->
+
 	<!-- //===== 케어 등록 caretype 가져오기 ===== -->
 	<resultMap type="java.util.HashMap" id="getCaretypeListMap">
 		<result property="CARETYPE_UID" 	column="caretype_UID" 	javaType="String" />
@@ -66,7 +63,6 @@
 		from caretype
 		where caretype_UID = #{caretype}
 	</select>
-	<!-- [19-01-25. 수정 끝_hyunjae] -->
 
 
 	<!-- //===== 케어 등록 ===== -->
@@ -98,7 +94,8 @@
 	</resultMap>
 	<select id="getPet_info" parameterType="HashMap" resultMap="Pet_InfoMap">
 		select previouspet_UID, previouspet_name
-		     , pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy, pet_profileimg
+		     , pet_UID, fk_idx, pet_name, pet_type, pet_birthday, pet_size, pet_weight, pet_gender, pet_neutral, medical_history, allergy
+		     , nvl(pet_profileimg, 'noimg.png') as pet_profileimg
 		     , nextpet_UID, nextpet_name
 		from
 		(

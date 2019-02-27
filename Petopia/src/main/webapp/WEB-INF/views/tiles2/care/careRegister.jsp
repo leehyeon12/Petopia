@@ -268,7 +268,7 @@
                            <!-- 
                            <label for="input-file">프로필</label>  
                            -->
-                           <img id="beforeProfile" width="100%" src="resources/img/care/${petInfo.PET_PROFILEIMG}" class="upload-thumb radius-box" style="border-radius: 100%;"> 
+                           <img id="beforeProfile" width="100%" src="resources/img/care/profiles/${petInfo.PET_PROFILEIMG}" class="upload-thumb radius-box" style="border-radius: 100%;"> 
                         </div>
                      </div>
                      <div class="col-sm-9">

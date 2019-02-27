@@ -104,8 +104,11 @@
 </style>
 
 <script type="text/javascript">
+ 
    $(document).ready(function() {
+	   
       $(".upload-hidden").hide();
+      
       // 이미지 크기 맞춤
       $('.profile').css('height', $(".profile").width() - 1);
       $('.radius-box').css('width', $(".profile").width());
@@ -115,6 +118,7 @@
          $('.radius-box').css('height', $(".profile").width());
          $('.radius-box').css('width', $(".profile").width());
       });
+      
       // profile에 이미지 띄우기
       var imgTarget = $('.preview-image .upload-hidden');
       imgTarget.on('change', function() {
@@ -132,9 +136,11 @@
             $(".profile").css('background-color', '#f2f2f2');
          }
       }); // end of imgChange
+      
       $(function() {
          $("#datepicker").datepicker();
       });
+      
       // 등록버튼
       $("#btnRegister").click(function() {
          //폼 submit
@@ -143,7 +149,9 @@
          registerFrm.method = "POST";
          registerFrm.submit();
       });
+      
    }); // end of ready()-------------------------------------------
+   
 </script>
 
 
