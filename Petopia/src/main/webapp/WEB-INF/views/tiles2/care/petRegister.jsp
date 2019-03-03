@@ -126,7 +126,6 @@
          parent.children('.upload-display').remove();
          if (window.FileReader) {
             //image 파일만
-            if (!$(this)[0].files[0].type.match(/image\//)) return;
             var reader = new FileReader();
             reader.onload = function(e) {
                var src = e.target.result;
@@ -216,7 +215,7 @@
                   <!-- Multiple Radios (inline) -->
                   <div class="row m-10">
                      <div class="col-sm-12 m-10 fl">
-                        <span class="frmQ">몸무게를 입력해주세요(선택)</span>
+                        <span class="frmQ">몸무게를 입력해주세요</span>
                         <ul>
                            <li>
                               <div class="col-sm-4" style="padding: 2px 0 0 0;">

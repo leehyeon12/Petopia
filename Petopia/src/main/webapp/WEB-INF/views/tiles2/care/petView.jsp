@@ -40,6 +40,10 @@
       text-align: left;
    }
    
+   .prenext {
+      margin-top: 35px;   	
+   }
+   
 </style>
 
 <script type="text/javascript">
@@ -242,22 +246,27 @@
                    + "   </thead>"
                    + "   <tbody>";
             
-            if(json == ''){
-               html += "      <tr>"
-                    + "         <td colspan='3' align='center'>기록이 없습니다.</td>"
-                    + "      </tr>";
+            if(json.length > 0){
+            	
+                $.each(json, function(entryIndex, entry) {
+                    html += "      <tr>"
+                          + "         <td>" + entry.CHART_UID + "</td>"
+                          + "         <td>" + entry.BIZ_NAME + "</td>"
+                          + "         <td>" + entry.RESERVATION_DATE + "</td>"
+                          + "      </tr>";      
+                 });
+                
             }
-                   
-            $.each(json, function(entryIndex, entry) {
-               html += "      <tr>"
-                    + "         <td>" + entry.CHART_UID + "</td>"
-                    + "         <td>" + entry.BIZ_NAME + "</td>"
-                    + "         <td>" + entry.RESERVATION_DATE + "</td>"
-                    + "      </tr>";      
-            });
+            else {
+            	
+                html += "      <tr>"
+                      + "         <td colspan='3' align='center'>기록이 없습니다.</td>"
+                      + "      </tr>";
             
-               html += "   </tbody>"
-                    + "</table>";
+            }
+            
+            html += "   </tbody>"
+            	  + "</table>";
 
             $("#table_chart").append(html);
          },
@@ -271,7 +280,7 @@
    function updateWeight() {
       
       var weightFrm = document.weightFrm;
-      weightFrm.action = "addWeightEnd.pet"
+      weightFrm.action = "addWeight.pet"
       weightFrm.method = "POST";
       weightFrm.submit();
 
@@ -290,7 +299,7 @@
       <div class="row">
          <div class="out" style="margin-left: 22%;">
          
-            <div class="in col-sm- col-sm-3">
+            <div class="in col-sm- col-sm-3 prenext">
                <ul style="list-style-type: none;">
                <c:if test="${petInfo.PREVIOUSPET_UID > 0}">
                   <li><span class="pointer changepet" onclick="javascript:location.href='petView.pet?pet_UID=${petInfo.PREVIOUSPET_UID}'">${petInfo.PREVIOUSPET_NAME}</span></li>
@@ -311,7 +320,7 @@
             <div class="in">
 
             </div>
-            <div class="in col-sm-3">
+            <div class="in col-sm-3 prenext">
                <ul style="list-style-type: none;">
                <c:if test="${petInfo.NEXTPET_UID > 0}">
                   <li><span class="pointer changepet" onclick="javascript:location.href='petView.pet?pet_UID=${petInfo.NEXTPET_UID}'">${petInfo.NEXTPET_NAME}</span></li>

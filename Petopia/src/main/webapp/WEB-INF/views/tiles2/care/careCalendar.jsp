@@ -178,7 +178,7 @@
 	                     
 	                  	html += "<div align='center' class='pet-box'>"
 	                     	  + "	<span class='pointer petname' onclick='javascript:location.href=\"petRegister.pet\"'>반려동물 추가하기</span>"
-			                  + "	<div class='img' style='display: block; text-align: left;'><a href='petRegister.pet'><img src='resources/img/care/petAdd.png' width='40px;' height='40px;' style='border-radius: 0%'></a></div>"
+			                  + "	<div class='img' style='display: block; text-align: left;'><a href='petRegister.pet'><img src='resources/img/care/petAdd.png' style='border-radius: 0%; width: 50px; height: 50px; margin: 35px;'></a></div>"
 	                  		  + "</div>";
 	                  	
 	                  $("#displayPetList").append(html);
@@ -209,13 +209,10 @@
 	         		var resultArr = []; 
 						
 						for(var i=0; i<json.length; i++) {
-							var obj = {
-										title: json[i].CARETYPE_NAME
-				    	              ,	start: json[i].CARE_START
-				    	              , end : json[i].CARE_END
-				    	              };
-							resultArr.push(obj); // 배열속에 값을 넣기
-					} // end of for
+							
+							resultArr.push(getObj(json[i])); // 배열속에 값을 넣기
+					
+						} // end of for
 
 					////////////////////////////// FullCalendar 시작 //////////////////////////////
 	         		$('#external-events .fc-event').each(function() {
@@ -297,6 +294,42 @@
 	      });
 	      
 	} // end of function getPetcareWithCalendar()-------------------------------------------
+	
+	
+	function getObj(json) {
+		
+		var color = "";
+		
+		switch (json.FK_CARETYPE_UID) {
+		  case '1' :
+			color = "#f4ba70";
+		    break;
+		  case '2' :
+			color = "#df8429"; 
+		    break;
+		  case '3' :
+			color = "#85c1f5";
+		    break;
+		  case '4' : 
+			color = "#13a0cb";
+		    break;
+		  case '5' :
+			color = "#e96d63";
+		    break;
+		  default :
+			color = "#da3428";
+		    break;
+		}
+			
+		var obj = {
+				title: json.CARETYPE_NAME								 
+			  , color: color
+              ,	start: json.CARE_START
+              , end : json.CARE_END
+        };
+		
+		return obj;
+	}
 	
 //	#엑셀로 업로드하기
 	function goExcelUpload(idx){

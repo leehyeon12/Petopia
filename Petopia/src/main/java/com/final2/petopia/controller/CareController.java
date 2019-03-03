@@ -208,25 +208,9 @@ public class CareController {
 		return returnmapList;
 	}
 	
-	//===== 특정 반려동물케어 몸무게 추가 페이지 요청 =====
-	@RequestMapping(value="/addWeight.pet", method={RequestMethod.GET})
-	public String addWeight(HttpServletRequest req) {
-		
-		HttpSession session = req.getSession();
-		MemberVO loginuser = (MemberVO)session.getAttribute("loginuser");
-		
-		// 로그인 한 사용자의 정보 가져오기
-		MemberVO mvo = member_service.selectMemberByIdx(loginuser.getIdx());
-		
-		String pet_UID = req.getParameter("pet_UID");
-		
-		req.setAttribute("mvo", mvo);
-		req.setAttribute("pet_UID", pet_UID);
-		
-		return "care/addWeight.notiles";
-	}
-	//===== 특정 반려동물케어 몸무게 추가 페이지 완료 =====
-	@RequestMapping(value="/addWeightEnd.pet", method={RequestMethod.POST})       
+
+	//===== 특정 반려동물케어 몸무게 추가 페이지 =====
+	@RequestMapping(value="/addWeight.pet", method={RequestMethod.POST})       
 	public String addWeightEnd(HttpServletRequest req) 
 		throws Throwable {
 		
@@ -260,7 +244,7 @@ public class CareController {
 		} catch(Exception e) { 
 			
 			msg = "체중 추가 실패!!";
-			loc = "/petopia/addWeight.pet?pet_UID=" + pet_UID;
+			loc = "/petopia/petView.pet?pet_UID=" + pet_UID;
 			
 		}
 		
